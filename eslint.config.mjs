@@ -6,15 +6,17 @@ export default tseslint.config(
   { ignores: ["dist"] },
   {
     extends: [
-      js.configs.recommended,
-      ...tseslint.configs.recommended,
-      prettier,
+      // js.configs.recommended,
+      // ...tseslint.configs.recommended,
+      // prettier,
     ],
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
     },
-    rules: {},
+    rules: {},               // Burada hiç kural tanımlanmadı
+    plugins: [],             // Plugin eklenmedi
+    processor: undefined,    // Prettier da yok
   },
 );
