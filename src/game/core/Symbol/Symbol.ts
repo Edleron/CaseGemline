@@ -11,6 +11,8 @@ export class Symbol extends Sprite {
 
   private dragOffset: { x: number; y: number } = { x: 0, y: 0 };
   private originalAlpha: number;
+  public hasEventListeners: boolean = false;
+  private dragMoveThrottle: boolean = false;
 
   constructor(symbolType?: string, mode: Mode = "easy") {
     // Get random symbol type if not provided
@@ -26,6 +28,9 @@ export class Symbol extends Sprite {
   }
 
   public setupInteractivity(): void {
+    // Prevent double setup
+    if (this.hasEventListeners) return;
+    
     this.eventMode = "static";
     this.cursor = "pointer";
 
@@ -35,17 +40,23 @@ export class Symbol extends Sprite {
     this.on("pointermove", this.onDragMove);
     this.on("pointerover", this.onHover);
     this.on("pointerout", this.onHoverEnd);
+    
+    this.hasEventListeners = true;
   }
 
   private onHover = (): void => {
     if (!this.isDragging) {
       this.alpha = 0.9;
+      // Emit hover start event for state machine
+      this.emit('hoverStart', this);
     }
   };
 
   private onHoverEnd = (): void => {
     if (!this.isDragging) {
       this.alpha = this.originalAlpha;
+      // Emit hover end event for state machine
+      this.emit('hoverEnd', this);
     }
   };
 
@@ -65,6 +76,9 @@ export class Symbol extends Sprite {
     if (this.parent) {
       this.parent.setChildIndex(this, this.parent.children.length - 1);
     }
+
+    // Emit drag start event for state machine
+    this.emit('dragStart', this);
   };
 
   private onDragMove = (event: FederatedPointerEvent): void => {
@@ -72,16 +86,34 @@ export class Symbol extends Sprite {
       const localPosition = event.getLocalPosition(this.parent);
       this.x = localPosition.x - this.dragOffset.x;
       this.y = localPosition.y - this.dragOffset.y;
+
+      // Throttle drag move events to reduce spam
+      if (!this.dragMoveThrottle) {
+        this.dragMoveThrottle = true;
+        setTimeout(() => {
+          if (this.isDragging) {
+            const globalPosition = event.getLocalPosition(this.parent.parent);
+            this.emit('dragMove', this, { x: globalPosition.x, y: globalPosition.y });
+          }
+          this.dragMoveThrottle = false;
+        }, 50); // Throttle to 20fps
+      }
     }
   };
 
-  private onDragEnd = (): void => {
+  private onDragEnd = (event: FederatedPointerEvent): void => {
     if (!this.isDragging) return;
 
     this.isDragging = false;
     this.alpha = this.originalAlpha;
 
-    // Emit custom event for drop handling
+    // Get global position for drop handling
+    const globalPosition = event.getLocalPosition(this.parent.parent);
+    
+    // Emit drag end event for state machine
+    this.emit('dragEnd', this, { x: globalPosition.x, y: globalPosition.y });
+
+    // Emit legacy event for backward compatibility
     this.emit("symbolDropped", this);
   };
 
@@ -116,6 +148,7 @@ export class Symbol extends Sprite {
   }
 
   public destroy(): void {
+    this.hasEventListeners = false;
     this.off("pointerdown", this.onDragStart);
     this.off("pointerup", this.onDragEnd);
     this.off("pointerupoutside", this.onDragEnd);

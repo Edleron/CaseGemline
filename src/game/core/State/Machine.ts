@@ -1,0 +1,164 @@
+import { assign, emit, setup } from 'xstate';
+
+//#region CONSTANTS
+const m_Types = {
+    SYMBOL_DRAG_START: 'symboldragstart',
+    SYMBOL_DRAG_END: 'symboldragend',
+    SYMBOL_DRAG_MOVE: 'symboldragmove',
+    SYMBOL_HOVER_START: 'symbolhoverstart',
+    SYMBOL_HOVER_END: 'symbolhoverend',
+} as const;
+
+const m_Actions = {
+    emit_event: 'emit_event',
+    drag_start: 'drag-start',
+    drag_end: 'drag_end',
+    drag_move: 'drag_move',
+    hover_start: 'hover_start',
+    hover_end: 'hover_end',
+} as const;
+
+const m_Targets = {
+    idle: 'idle',
+    dragging: 'dragging',
+    hovering: 'hovering',
+    matching: 'matching',
+    dropping: 'dropping'
+} as const;
+//#endregion
+
+//#region INTERFACES
+interface IContext {
+    draggedSymbol: any | null;
+    hoveredSymbol: any | null;
+    dropTarget: { row: number; col: number } | null;
+    isValidDrop: boolean;
+}
+//#endregion
+
+//#region TYPE ALIASES
+type TEvents =
+    | { type: typeof m_Types.SYMBOL_DRAG_START; symbol: any }
+    | { type: typeof m_Types.SYMBOL_DRAG_END; symbol: any; position: { x: number; y: number } }
+    | { type: typeof m_Types.SYMBOL_DRAG_MOVE; position: { x: number; y: number } }
+    | { type: typeof m_Types.SYMBOL_HOVER_START; symbol: any }
+    | { type: typeof m_Types.SYMBOL_HOVER_END; symbol: any };
+//#endregion
+
+export const UIStateMachine = setup({
+    types: {
+        context: {} as IContext,
+        events: {} as TEvents,
+    },
+    actors: {
+
+    },
+    actions: {
+        [m_Actions.drag_start]: assign({
+            draggedSymbol: ({ event }) => {
+                // console.log('[Action] drag_start', event);
+                return event.type === m_Types.SYMBOL_DRAG_START ? event.symbol : null;
+            },
+        }),
+        [m_Actions.drag_end]: assign({
+            draggedSymbol: ({ event }) => {
+                // console.log('[Action] drag_end', event);
+                return null;
+            },
+            dropTarget: () => null,
+            isValidDrop: () => false,
+        }),
+        [m_Actions.drag_move]: assign({
+            dropTarget: ({ event }) => {
+                // console.log('[Action] drag_move', event);
+                // Bu kısımda board pozisyonunu hesaplayabilirsiniz
+                return event.type === m_Types.SYMBOL_DRAG_MOVE ? { row: 0, col: 0 } : null;
+            }
+        }),
+        [m_Actions.hover_start]: assign({
+            hoveredSymbol: ({ event }) => {
+                // console.log('[Action] hover_start', event);
+                return event.type === m_Types.SYMBOL_HOVER_START ? event.symbol : null;
+            },
+        }),
+        [m_Actions.hover_end]: assign({
+            hoveredSymbol: ({ event }) => {
+                // console.log('[Action] hover_end', event);
+                return null;
+            },
+        }),
+        logIdleEntry: () => {
+            // console.log('[State] Entered idle');
+        },
+        logDraggingEntry: () => {
+            // console.log('[State] Entered dragging');
+        },
+        logHoveringEntry: () => {
+            // console.log('[State] Entered hovering');
+        },
+        logMatchingEntry: () => {
+            // console.log('[State] Entered matching');
+        },
+        logDroppingEntry: () => {
+            // console.log('[State] Entered dropping');
+        },
+    },
+}).createMachine({
+    context: {
+        draggedSymbol: null,
+        hoveredSymbol: null,
+        dropTarget: null,
+        isValidDrop: false,
+    },
+    id: 'gameStateMachine',
+    initial: m_Targets.idle,
+    states: {
+        [m_Targets.idle]: {
+            entry: ['logIdleEntry'],
+            on: {
+                [m_Types.SYMBOL_DRAG_START]: {
+                    target: m_Targets.dragging,
+                    actions: [m_Actions.drag_start]
+                },
+                [m_Types.SYMBOL_HOVER_START]: {
+                    target: m_Targets.hovering,
+                    actions: [m_Actions.hover_start]
+                }
+            }
+        },
+        [m_Targets.dragging]: {
+            entry: ['logDraggingEntry'],
+            on: {
+                [m_Types.SYMBOL_DRAG_MOVE]: {
+                    actions: [m_Actions.drag_move]
+                },
+                [m_Types.SYMBOL_DRAG_END]: {
+                    target: m_Targets.idle,
+                    actions: [m_Actions.drag_end]
+                }
+            }
+        },
+        [m_Targets.hovering]: {
+            entry: ['logHoveringEntry'],
+            on: {
+                [m_Types.SYMBOL_HOVER_END]: {
+                    target: m_Targets.idle,
+                    actions: [m_Actions.hover_end]
+                },
+                [m_Types.SYMBOL_DRAG_START]: {
+                    target: m_Targets.dragging,
+                    actions: [m_Actions.drag_start]
+                }
+            }
+        },
+        [m_Targets.matching]: {
+            entry: ['logMatchingEntry'],
+        },
+        [m_Targets.dropping]: {
+            entry: ['logDroppingEntry'],
+        }
+    },
+    on: {
+        
+    },
+});

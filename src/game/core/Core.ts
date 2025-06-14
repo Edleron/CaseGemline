@@ -1,7 +1,9 @@
 import { Container } from "pixi.js";
+import { createActor } from "xstate";
 import { Board } from "./Board/Board";
 import { Symbol } from "./Symbol/Symbol";
 import { Config, GetConfig } from "./Constants/Configt";
+import { UIStateMachine } from "./State/Machine";
 import { animate } from "motion";
 
 export class Core extends Container {
@@ -10,10 +12,16 @@ export class Core extends Container {
   private viewerBoard: Board;
   private mainSymbols: Symbol[][] = [];
   private viewerSymbols: Symbol[] = [];
+  private stateMachine: ReturnType<typeof createActor>;
+  private lastLoggedState: string = '';
 
   constructor(customConfig?: Partial<Config>) {
     super();
     this.config = GetConfig(customConfig);
+    
+    // Initialize state machine
+    this.stateMachine = createActor(UIStateMachine);
+    this.stateMachine.start();
     
     // Create main board
     this.mainBoard = new Board(this.config);
@@ -29,6 +37,21 @@ export class Core extends Container {
     this.addChild(this.mainBoard);
     this.addChild(this.viewerBoard);
     this.initializeSymbols();
+    this.setupStateMachineListeners();
+  }
+
+  private setupStateMachineListeners(): void {
+    // Subscribe to state machine changes - but filter out spam
+    this.stateMachine.subscribe((state) => {
+      const currentState = String(state.value);
+      
+      // Only log if state actually changed
+      if (currentState !== this.lastLoggedState) {
+        console.log('[State Machine] State changed:', currentState);
+        console.log('[State Machine] Context:', state.context);
+        this.lastLoggedState = currentState;
+      }
+    });
   }
 
   private initializeSymbols(): void {
@@ -83,8 +106,115 @@ export class Core extends Container {
     symbol.y = finalY - this.config.tileSize * 2;
     symbol.alpha = 0;
     
+    // Setup symbol event handlers for state machine (ONLY for viewer symbols)
+    this.setupSymbolEventHandlers(symbol);
+    
     this.viewerSymbols[col] = symbol;
     this.viewerBoard.addChild(symbol);
+  }
+
+  private setupSymbolEventHandlers(symbol: Symbol): void {
+    // Handle symbol drag start
+    symbol.on('dragStart', (symbolInstance: Symbol) => {
+      console.log('[Symbol Event] Drag Start');
+      this.stateMachine.send({
+        type: 'symboldragstart',
+        symbol: symbolInstance
+      });
+    });
+
+    // Handle symbol drag move - REMOVE this to reduce spam
+    // symbol.on('dragMove', (symbolInstance: Symbol, position: { x: number; y: number }) => {
+    //   this.stateMachine.send({
+    //     type: 'symboldragmove',
+    //     position
+    //   });
+    // });
+
+    // Handle symbol drag end
+    symbol.on('dragEnd', (symbolInstance: Symbol, position: { x: number; y: number }) => {
+      console.log('[Symbol Event] Drag End');
+      this.handleSymbolDrop(symbolInstance, position);
+      this.stateMachine.send({
+        type: 'symboldragend',
+        symbol: symbolInstance,
+        position
+      });
+    });
+
+    // Handle symbol hover start
+    symbol.on('hoverStart', (symbolInstance: Symbol) => {
+      console.log('[Symbol Event] Hover Start');
+      this.stateMachine.send({
+        type: 'symbolhoverstart',
+        symbol: symbolInstance
+      });
+    });
+
+    // Handle symbol hover end
+    symbol.on('hoverEnd', (symbolInstance: Symbol) => {
+      console.log('[Symbol Event] Hover End');
+      this.stateMachine.send({
+        type: 'symbolhoverend',
+        symbol: symbolInstance
+      });
+    });
+  }
+
+  private handleSymbolDrop(symbol: Symbol, globalPosition: { x: number; y: number }): void {
+    // Convert global position to main board local position
+    const localPosition = this.mainBoard.toLocal(globalPosition, this.parent);
+    const gridPosition = this.mainBoard.getGridPositionFromCoords(localPosition.x, localPosition.y);
+    
+    // Check if drop position is valid (within board bounds)
+    if (this.isValidDropPosition(gridPosition.row, gridPosition.col)) {
+      // Check if the cell is empty
+      if (!this.mainSymbols[gridPosition.row][gridPosition.col]) {
+        // Place symbol on main board
+        this.placeSymbolOnMainBoard(symbol, gridPosition.row, gridPosition.col);
+      } else {
+        // Return symbol to original position
+        symbol.returnToOriginalPosition();
+      }
+    } else {
+      // Return symbol to original position
+      symbol.returnToOriginalPosition();
+    }
+  }
+
+  private isValidDropPosition(row: number, col: number): boolean {
+    return row >= 0 && row < this.config.rows && col >= 0 && col < this.config.columns;
+  }
+
+  private placeSymbolOnMainBoard(symbol: Symbol, row: number, col: number): void {
+    const cellPosition = this.mainBoard.getCellPosition(row, col);
+    
+    // Convert from main board local coordinates to symbol's parent coordinates
+    const globalPos = this.mainBoard.toGlobal(cellPosition);
+    const finalPos = symbol.parent!.toLocal(globalPos);
+    
+    // Animate symbol to final position
+    animate(symbol, { x: finalPos.x, y: finalPos.y }, { duration: 0.3 }).then(() => {
+      // Remove from viewer board and add to main board
+      this.viewerBoard.removeChild(symbol);
+      this.mainBoard.addChild(symbol);
+      
+      // Update symbol position and board reference
+      symbol.x = cellPosition.x;
+      symbol.y = cellPosition.y;
+      symbol.setBoardPosition(row, col);
+      symbol.snapToPosition(cellPosition.x, cellPosition.y);
+      
+      // Update main symbols array
+      this.mainSymbols[row][col] = symbol;
+      
+      // Remove from viewer symbols array and create new symbol
+      const viewerIndex = this.viewerSymbols.indexOf(symbol);
+      if (viewerIndex !== -1) {
+        this.createViewerBoardSymbolAt(viewerIndex);
+        this.animateViewerBoardSymbolDrop(this.viewerSymbols[viewerIndex], viewerIndex);
+      }
+    });
   }
 
   public startDropAnimation(): void {
@@ -156,7 +286,12 @@ export class Core extends Container {
         ease: [0.25, 0.46, 0.45, 0.94],
         onComplete: () => {
           symbol.snapToPosition(finalX, finalY);
-          symbol.setupInteractivity(); // Enable dragging for viewer symbols
+          symbol.setupInteractivity();
+          // Only setup event handlers once per symbol
+          if (!symbol.hasEventListeners) {
+            this.setupSymbolEventHandlers(symbol);
+            symbol.hasEventListeners = true;
+          }
         }
       }
     );
@@ -172,5 +307,9 @@ export class Core extends Container {
 
   public getViewerSymbolAt(col: number): Symbol | null {
     return this.viewerSymbols[col] || null;
+  }
+
+  public getStateMachine() {
+    return this.stateMachine;
   }
 }
