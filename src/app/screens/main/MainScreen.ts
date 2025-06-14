@@ -5,6 +5,7 @@ import type { Ticker } from "pixi.js";
 import { Container } from "pixi.js";
 
 import { engine } from "../../getEngine";
+import { game } from "../../getGame";
 import { PausePopup } from "../../popups/PausePopup";
 import { SettingsPopup } from "../../popups/SettingsPopup";
 import { Button } from "../../ui/Button";
@@ -16,12 +17,13 @@ export class MainScreen extends Container {
   /** Assets bundles required by this screen */
   public static assetBundles = ["main"];
 
-  public mainContainer: Container;
-  private pauseButton: FancyButton;
-  private settingsButton: FancyButton;
-  private addButton: FancyButton;
-  private removeButton: FancyButton;
-  private bouncer: Bouncer;
+  public mainContainer    : Container;
+  public uiContainer!      : Container;
+  private pauseButton!: FancyButton;
+  private settingsButton!  : FancyButton;
+  private addButton!       : FancyButton;
+  private removeButton!    : FancyButton;
+  private bouncer         : Bouncer;
   private paused = false;
 
   constructor() {
@@ -31,19 +33,29 @@ export class MainScreen extends Container {
     this.addChild(this.mainContainer);
     this.bouncer = new Bouncer();
 
+    this.addChild(game());
+
+    this.createUI();
+  }
+
+  private createUI(){
+    this.uiContainer = new Container();
+    this.name = "uiContainer";
+    this.addChild(this.uiContainer);
+
     const buttonAnimations = {
-      hover: {
-        props: {
-          scale: { x: 1.1, y: 1.1 },
-        },
-        duration: 100,
-      },
-      pressed: {
-        props: {
-          scale: { x: 0.9, y: 0.9 },
-        },
-        duration: 100,
-      },
+          hover: {
+            props: {
+              scale: { x: 1.1, y: 1.1 },
+            },
+            duration: 100,
+          },
+          pressed: {
+            props: {
+              scale: { x: 0.9, y: 0.9 },
+            },
+            duration: 100,
+          },
     };
     this.pauseButton = new FancyButton({
       defaultView: "icon-pause.png",
@@ -53,17 +65,17 @@ export class MainScreen extends Container {
     this.pauseButton.onPress.connect(() =>
       engine().navigation.presentPopup(PausePopup),
     );
-    this.addChild(this.pauseButton);
+    this.uiContainer.addChild(this.pauseButton);
 
     this.settingsButton = new FancyButton({
-      defaultView: "icon-settings.png",
-      anchor: 0.5,
-      animations: buttonAnimations,
+          defaultView: "icon-settings.png",
+          anchor: 0.5,
+          animations: buttonAnimations,
     });
     this.settingsButton.onPress.connect(() =>
       engine().navigation.presentPopup(SettingsPopup),
     );
-    this.addChild(this.settingsButton);
+    this.uiContainer.addChild(this.settingsButton);
 
     this.addButton = new Button({
       text: "Add",
@@ -71,7 +83,7 @@ export class MainScreen extends Container {
       height: 71,
     });
     this.addButton.onPress.connect(() => this.bouncer.add());
-    this.addChild(this.addButton);
+    this.uiContainer.addChild(this.addButton);
 
     this.removeButton = new Button({
       text: "Remove",
@@ -79,8 +91,8 @@ export class MainScreen extends Container {
       height: 71,
     });
     this.removeButton.onPress.connect(() => this.bouncer.remove());
-    this.addChild(this.removeButton);
-  }
+    this.uiContainer.addChild(this.removeButton);
+  } 
 
   /** Prepare the screen just before showing */
   public prepare() {}
