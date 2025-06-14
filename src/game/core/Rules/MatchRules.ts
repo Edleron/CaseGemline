@@ -15,6 +15,9 @@ export class MatchRules {
   // RULE: 3 veya daha fazla aynı symbol yan yana ise match
   public static readonly MIN_MATCH_COUNT = 3;
   
+  // RULE: Hint için minimum grup sayısı (2+ yan yana)
+  public static readonly MIN_HINT_GROUP_COUNT = 2;
+  
   // RULE: Sadece yatay ve dikey match'ler geçerli (çapraz değil)
   public static readonly VALID_DIRECTIONS = ['horizontal', 'vertical'] as const;
   
@@ -39,6 +42,11 @@ export class MatchRules {
   // RULE: Minimum match sayısını kontrol et
   public static hasMinimumCount(count: number): boolean {
     return count >= this.MIN_MATCH_COUNT;
+  }
+  
+  // RULE: Hint için grup sayısını kontrol et
+  public static hasMinimumHintCount(count: number): boolean {
+    return count >= this.MIN_HINT_GROUP_COUNT;
   }
   
   // RULE: Symbol'ün geçerli olup olmadığını kontrol et
