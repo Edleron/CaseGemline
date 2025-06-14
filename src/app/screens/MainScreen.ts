@@ -14,7 +14,6 @@ export class MainScreen extends Container {
   /** Assets bundles required by this screen */
   public static assetBundles = ["main"];
 
-  public mainContainer      : Container;
   public uiContainer!       : Container;
   private pauseButton!      : FancyButton;
   private settingsButton!   : FancyButton;
@@ -23,12 +22,8 @@ export class MainScreen extends Container {
 
   constructor() {
     super();
-    this.mainContainer = new Container();
-    this.addChild(this.mainContainer);
-
     game().init();
     this.addChild(game());
-
     this.createUI();
   }
 
@@ -108,13 +103,11 @@ export class MainScreen extends Container {
 
   /** Pause gameplay - automatically fired when a popup is presented */
   public async pause() {
-    this.mainContainer.interactiveChildren = false;
     this.paused = true;
   }
 
   /** Resume gameplay */
   public async resume() {
-    this.mainContainer.interactiveChildren = true;
     this.paused = false;
   }
 
@@ -123,11 +116,12 @@ export class MainScreen extends Container {
 
   /** Resize the screen, fired whenever window size changes */
   public resize(width: number, height: number) {
-    const centerX = width * 0.5;
-    const centerY = height * 0.5;
+    // const centerX = width * 0.5;
+    // const centerY = height * 0.5;
 
-    this.mainContainer.x = centerX;
-    this.mainContainer.y = centerY;
+    // this.mainContainer.x = centerX;
+    // this.mainContainer.y = centerY;
+    
     game().position.x = (width / 2) - (game().width / 2);
     game().position.y = 50;
     this.pauseButton.x = 30;

@@ -9,14 +9,18 @@ export class LogicListener {
   private lastState: string = '';
   private unsubscribe: () => void;
   
-  constructor(stateMachine: Actor<any>, initialContext: ILogicContext) {
+  constructor(stateMachine: Actor<any>, _initialContext: ILogicContext) {
     this.stateMachine = stateMachine;
     this.validationLogic = new ValidationLogic();
     this.setupListeners();
     
     // Subscribe to store changes for logic context updates
-    this.unsubscribe = Store.subscribe((state) => {
-      // Auto-update when context changes - no manual updates needed
+    this.unsubscribe = Store.subscribe((state, previousState) => {
+      // Check if logic context changed
+      if (state.logicContext !== previousState.logicContext) {
+        console.log('[LogicListener] Context updated from store');
+        // Context is now automatically available from store when needed
+      }
     });
   }
   
@@ -68,7 +72,7 @@ export class LogicListener {
     try {
       const storeState = Store.getState();
       const draggedSymbol = storeState.draggedSymbol;
-      const logicContext = storeState.logicContext;
+      const logicContext = storeState.logicContext; // Her zaman güncel context
       
       if (!draggedSymbol || !logicContext) {
         return;
@@ -77,6 +81,7 @@ export class LogicListener {
       storeState.setSwapInProgress(true);
       
       const mockContext = { draggedSymbol };
+      // ValidationLogic içinde store güncellendiği için context her zaman fresh
       await this.validationLogic.execute(mockContext, logicContext);
       
       storeState.setSwapInProgress(false);
@@ -86,11 +91,11 @@ export class LogicListener {
     }
   }
   
-  private handleDraggingStarted(context: any): void {
+  private handleDraggingStarted(_context: any): void {
     // console.log('[LogicListener] Dragging started');
   }
   
-  private handleHoveringStarted(context: any): void {
+  private handleHoveringStarted(_context: any): void {
     // console.log('[LogicListener] Hovering started');
   }
   

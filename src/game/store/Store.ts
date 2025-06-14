@@ -54,8 +54,3 @@ export const Store = createStore<GameState>((set) => ({
     isSwapInProgress: false 
   })
 }));
-
-// State change subscribers
-Store.subscribe((state: GameState) => {
-  // console.log("Game State Updated:", state);
-});
