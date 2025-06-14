@@ -147,7 +147,7 @@ export class Symbol extends Sprite {
     return this.symbolType;
   }
 
-  public destroy(): void {
+  public destroyInteractive(): void {
     this.hasEventListeners = false;
     this.off("pointerdown", this.onDragStart);
     this.off("pointerup", this.onDragEnd);
@@ -155,7 +155,12 @@ export class Symbol extends Sprite {
     this.off("pointermove", this.onDragMove);
     this.off("pointerover", this.onHover);
     this.off("pointerout", this.onHoverEnd);
+    this.eventMode = "none";
+    this.cursor = "auto";
+  }
 
+  public destroy(): void {
+    this.destroyInteractive();
     super.destroy();
   }
 }

@@ -1,28 +1,33 @@
 import { Actor } from 'xstate';
 import { ILogicContext } from './ILogic';
-import { DropValidationLogic } from './ValidationLogic';
+import { ValidationLogic } from './ValidationLogic';
+import { Store } from '../../Store/Store';
 
 export class LogicListener {
   private stateMachine: Actor<any>;
-  private logicContext: ILogicContext;
-  private dropValidationLogic: DropValidationLogic;
+  private validationLogic: ValidationLogic;
   private lastState: string = '';
-  private lastDraggedSymbol: any = null;
+  private unsubscribe: () => void;
   
-  constructor(stateMachine: Actor<any>, logicContext: ILogicContext) {
+  constructor(stateMachine: Actor<any>, initialContext: ILogicContext) {
     this.stateMachine = stateMachine;
-    this.logicContext = logicContext;
-    this.dropValidationLogic = new DropValidationLogic();
+    this.validationLogic = new ValidationLogic();
     this.setupListeners();
+    
+    // Subscribe to store changes for logic context updates
+    this.unsubscribe = Store.subscribe((state) => {
+      // Auto-update when context changes - no manual updates needed
+    });
   }
   
   public clearStaleReferences(): void {
-    this.lastDraggedSymbol = null;
+    Store.getState().clearLogicState();
     this.lastState = '';
   }
   
   public updateContext(newContext: ILogicContext): void {
-    this.logicContext = newContext;
+    // No longer needed - store handles this automatically
+    Store.getState().setLogicContext(newContext);
   }
   
   private setupListeners(): void {
@@ -41,15 +46,15 @@ export class LogicListener {
     switch (currentState) {
       case 'dragging':
         if (context.draggedSymbol) {
-          this.lastDraggedSymbol = context.draggedSymbol;
+          Store.getState().setDraggedSymbol(context.draggedSymbol);
           this.handleDraggingStarted(context);
         }
         break;
         
       case 'idle':
-        if (this.lastState === 'dragging' && this.lastDraggedSymbol) {
+        if (this.lastState === 'dragging') {
           await this.handleDropCompleted();
-          this.lastDraggedSymbol = null;
+          Store.getState().clearLogicState();
         }
         break;
         
@@ -61,22 +66,35 @@ export class LogicListener {
   
   private async handleDropCompleted(): Promise<void> {
     try {
-      if (!this.lastDraggedSymbol) {
+      const storeState = Store.getState();
+      const draggedSymbol = storeState.draggedSymbol;
+      const logicContext = storeState.logicContext;
+      
+      if (!draggedSymbol || !logicContext) {
         return;
       }
       
-      const mockContext = { draggedSymbol: this.lastDraggedSymbol };
-      await this.dropValidationLogic.execute(mockContext, this.logicContext);
+      storeState.setSwapInProgress(true);
+      
+      const mockContext = { draggedSymbol };
+      await this.validationLogic.execute(mockContext, logicContext);
+      
+      storeState.setSwapInProgress(false);
     } catch (error) {
       console.error('[LogicListener] Error in drop validation logic:', error);
+      Store.getState().setSwapInProgress(false);
     }
   }
   
   private handleDraggingStarted(context: any): void {
-    // console.log('[LogicListener] Dragging started for symbol:', context.draggedSymbol);
+    // console.log('[LogicListener] Dragging started');
   }
   
   private handleHoveringStarted(context: any): void {
-    // console.log('[LogicListener] Hovering started for symbol:', context.hoveredSymbol);
+    // console.log('[LogicListener] Hovering started');
+  }
+  
+  public destroy(): void {
+    this.unsubscribe();
   }
 }

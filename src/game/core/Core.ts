@@ -7,6 +7,7 @@ import { UIStateMachine } from "./State/Machine";
 import { animate } from "motion";
 import { LogicListener } from "./Logic/LogicListener";
 import { ILogicContext } from "./Logic/ILogic";
+import { Store } from "../Store/Store";
 
 export class Core extends Container {
   private config: Config;
@@ -52,17 +53,29 @@ export class Core extends Container {
     this.setupStateMachineListeners();
 
     // Initialize logic listener after boards are created
-    const logicContext: ILogicContext = {
+    this.logicListener = new LogicListener(this.stateMachine, this.createLogicContext());
+    
+    // Initialize store with logic context
+    Store.getState().setLogicContext(this.createLogicContext());
+  }
+
+  public createLogicContext(): ILogicContext {
+    const context = {
       mainBoard: this.mainBoard,
       viewerBoard: this.viewerBoard,
       mainContainer: this.mainContainer,
       viewerContainer: this.viewerContainer,
       mainSymbols: this.mainSymbols,
       viewerSymbols: this.viewerSymbols,
-      config: this.config
+      config: this.config,
+      setupSymbolEventHandlers: this.setupSymbolEventHandlers.bind(this),
+      removeSymbolEventHandlers: this.removeSymbolEventHandlers.bind(this)
     };
     
-    this.logicListener = new LogicListener(this.stateMachine, logicContext);
+    // Update store whenever context is created
+    Store.getState().setLogicContext(context);
+    
+    return context;
   }
 
   private setupStateMachineListeners(): void {
@@ -336,18 +349,8 @@ export class Core extends Container {
     // Reinitialize all symbols
     this.initializeSymbols();
     
-    // Update LogicListener context with new arrays
-    const updatedLogicContext: ILogicContext = {
-      mainBoard: this.mainBoard,
-      viewerBoard: this.viewerBoard,
-      mainContainer: this.mainContainer,
-      viewerContainer: this.viewerContainer,
-      mainSymbols: this.mainSymbols,
-      viewerSymbols: this.viewerSymbols,
-      config: this.config
-    };
-    
-    this.logicListener.updateContext(updatedLogicContext);
+    // Update store with new context instead of directly updating LogicListener
+    this.createLogicContext();
     
     // Start drop animation
     this.startDropAnimation();

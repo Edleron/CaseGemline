@@ -3,13 +3,11 @@ import { animate } from "motion";
 import type { Ticker } from "pixi.js";
 import { Container } from "pixi.js";
 
-import { engine } from "../../getEngine";
-import { game } from "../../getGame";
-import { PausePopup } from "../../popups/PausePopup";
-import { SettingsPopup } from "../../popups/SettingsPopup";
-import { Button } from "../../ui/Button";
-
-import { Bouncer } from "./bouncer/Bouncer";
+import { engine } from "../getEngine";
+import { game } from "../getGame";
+import { PausePopup } from "../popups/PausePopup";
+import { SettingsPopup } from "../popups/SettingsPopup";
+import { Button } from "../ui/Button";
 
 /** The screen that holds the app */
 export class MainScreen extends Container {
@@ -21,15 +19,12 @@ export class MainScreen extends Container {
   private pauseButton!      : FancyButton;
   private settingsButton!   : FancyButton;
   private addButton!        : FancyButton;
-  private removeButton!     : FancyButton;
-  private bouncer           : Bouncer;
   private paused            = false;
 
   constructor() {
     super();
     this.mainContainer = new Container();
     this.addChild(this.mainContainer);
-    this.bouncer = new Bouncer();
 
     game().init();
     this.addChild(game());
@@ -77,7 +72,7 @@ export class MainScreen extends Container {
     this.uiContainer.addChild(this.settingsButton);
 
     this.addButton = new Button({
-      text: "Add",
+      text: "Restart Game",
       width: 268,
       height: 71,
     });
@@ -87,14 +82,6 @@ export class MainScreen extends Container {
       }
     });
     this.uiContainer.addChild(this.addButton);
-
-    this.removeButton = new Button({
-      text: "Remove",
-      width: 268,
-      height: 71,
-    });
-    this.removeButton.onPress.connect(() => this.bouncer.remove());
-    this.uiContainer.addChild(this.removeButton);
   } 
 
   /** Prepare the screen just before showing */
@@ -117,8 +104,6 @@ export class MainScreen extends Container {
       this.addButton.alpha = 1;
       this.addButton.cursor = 'pointer';
     }
-    
-    this.bouncer.update();
   }
 
   /** Pause gameplay - automatically fired when a popup is presented */
@@ -149,12 +134,8 @@ export class MainScreen extends Container {
     this.pauseButton.y = 30;
     this.settingsButton.x = width - 30;
     this.settingsButton.y = 30;
-    this.removeButton.x = width / 2 - 200;
-    this.removeButton.y = height - 75;
-    this.addButton.x = width / 2 + 200;
+    this.addButton.x = width / 2;
     this.addButton.y = height - 75;
-
-    this.bouncer.resize(width, height);
   }
 
   /** Show screen with animations */
@@ -165,7 +146,6 @@ export class MainScreen extends Container {
       this.pauseButton,
       this.settingsButton,
       this.addButton,
-      this.removeButton,
       game(),
     ];
 
@@ -181,8 +161,6 @@ export class MainScreen extends Container {
     }
 
     await finalPromise;
-
-    this.bouncer.show(this);
     game().fade()
   }
 

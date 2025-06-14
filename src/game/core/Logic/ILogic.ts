@@ -6,6 +6,8 @@ export interface ILogicContext {
   mainSymbols: any[][];
   viewerSymbols: any[];
   config: any;
+  setupSymbolEventHandlers: (symbol: any) => void;
+  removeSymbolEventHandlers: (symbol: any) => void;
 }
 
 export interface ILogic {

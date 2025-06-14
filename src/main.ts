@@ -1,7 +1,7 @@
 import { setEngine } from "./app/getEngine";
 import { setGame } from "./app/getGame";
 import { LoadScreen } from "./app/screens/LoadScreen";
-import { MainScreen } from "./app/screens/main/MainScreen";
+import { MainScreen } from "./app/screens/MainScreen";
 import { userSettings } from "./app/utils/userSettings";
 import { CreationEngine } from "./engine/engine";
 
