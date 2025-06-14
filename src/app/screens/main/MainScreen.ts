@@ -28,11 +28,11 @@ export class MainScreen extends Container {
 
   constructor() {
     super();
-
     this.mainContainer = new Container();
     this.addChild(this.mainContainer);
     this.bouncer = new Bouncer();
 
+    game().init();
     this.addChild(game());
 
     this.createUI();
@@ -126,6 +126,8 @@ export class MainScreen extends Container {
 
     this.mainContainer.x = centerX;
     this.mainContainer.y = centerY;
+    game().position.x = (width / 2) - (game().width / 2);
+    game().position.y = 50;
     this.pauseButton.x = 30;
     this.pauseButton.y = 30;
     this.settingsButton.x = width - 30;
@@ -147,6 +149,7 @@ export class MainScreen extends Container {
       this.settingsButton,
       this.addButton,
       this.removeButton,
+      game(),
     ];
 
     let finalPromise!: AnimationPlaybackControls;
