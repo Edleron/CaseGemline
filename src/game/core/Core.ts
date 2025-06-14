@@ -104,6 +104,7 @@ export class Core extends Container {
     symbol.x = finalX;
     symbol.y = finalY - (this.config.rows + 2) * this.config.tileSize;
     symbol.alpha = 0;
+    symbol.name = `mainSymbol-${row}-${col}`;
     
     this.mainSymbols[row][col] = symbol;
     this.mainBoard.addChild(symbol);
@@ -120,6 +121,7 @@ export class Core extends Container {
     symbol.x = finalX;
     symbol.y = finalY - this.config.tileSize * 2;
     symbol.alpha = 0;
+    symbol.name = `mainSymbol-${col}`;
     
     // DON'T setup symbol event handlers here - wait for drop animation to complete
     
