@@ -1,4 +1,5 @@
 import { ILogic, ILogicContext } from "./ILogic";
+import { animate } from "motion";
 
 export class DropValidationLogic implements ILogic {
   
@@ -6,7 +7,6 @@ export class DropValidationLogic implements ILogic {
     const { draggedSymbol } = context;
     
     if (!draggedSymbol) {
-      console.log('[DropLogic] No dragged symbol found');
       return;
     }
     
@@ -19,8 +19,18 @@ export class DropValidationLogic implements ILogic {
     if (!isCollidingWithMainBoard) {
       await this.returnSymbolToOriginalPosition(draggedSymbol);
     } else {
-      // TODO: Burada hücre kontrolü ve yer değiştirme logic'i gelecek
-      await this.returnSymbolToOriginalPosition(draggedSymbol); // Şimdilik geri döndür
+
+      const mainBoardLocalPos = logicContext.mainBoard.toLocal(symbolGlobalPosition);
+      const gridPosition = logicContext.mainBoard.getGridPositionFromCoords(mainBoardLocalPos.x, mainBoardLocalPos.y);
+
+      const targetSymbol = logicContext.mainSymbols[gridPosition.row]?.[gridPosition.col];
+      console.log(mainBoardLocalPos, gridPosition, targetSymbol);
+
+      if (targetSymbol) {
+        await this.swapSymbols(draggedSymbol, targetSymbol, gridPosition, logicContext);
+      } else {
+        await this.returnSymbolToOriginalPosition(draggedSymbol);
+      }
     }
   }
   
@@ -29,7 +39,6 @@ export class DropValidationLogic implements ILogic {
     logicContext: ILogicContext
   ): boolean {
     
-    // Main board bounds kontrolü (global koordinatlarda)
     const mainBoard = logicContext.mainBoard;
     const mainBoardGlobalBounds = mainBoard.toGlobal({ x: 0, y: 0 });
     const mainBoardBounds = {
@@ -38,8 +47,8 @@ export class DropValidationLogic implements ILogic {
       width: mainBoard.width,
       height: mainBoard.height
     };
+
     
-    // Symbol main board alanı içinde mi?
     const isInMainBoardArea = (
       symbolGlobalPosition.x >= mainBoardBounds.x &&
       symbolGlobalPosition.x <= mainBoardBounds.x + mainBoardBounds.width &&
@@ -55,5 +64,60 @@ export class DropValidationLogic implements ILogic {
     } else {
       console.error('[DropLogic] Symbol does not have returnToOriginalPosition method');
     }
+  }
+  
+  private async swapSymbols(
+    viewerSymbol: any, 
+    mainBoardSymbol: any, 
+    targetGridPosition: { row: number; col: number },
+    logicContext: ILogicContext
+  ): Promise<void> {    
+    // Get positions
+    const viewerOriginalPos = viewerSymbol.originalPosition;
+    const mainBoardCellPos = logicContext.mainBoard.getCellPosition(targetGridPosition.row, targetGridPosition.col);
+    
+    const viewerIndex = logicContext.viewerSymbols.indexOf(viewerSymbol);
+    const viewerCellPos = logicContext.viewerBoard.getCellPosition(0, viewerIndex);
+    
+    const mainBoardGlobalPos = logicContext.mainBoard.toGlobal(mainBoardCellPos);
+    const viewerSymbolFinalPos = viewerSymbol.parent.toLocal(mainBoardGlobalPos);
+    
+
+    const viewerBoardGlobalPos = logicContext.viewerBoard.toGlobal(viewerCellPos);
+    const mainBoardSymbolFinalPos = mainBoardSymbol.parent.toLocal(viewerBoardGlobalPos);
+    
+    
+    const viewerAnimation = animate(viewerSymbol, {
+      x: viewerSymbolFinalPos.x,
+      y: viewerSymbolFinalPos.y
+    }, { duration: 0 });
+    
+    
+    const mainBoardAnimation = animate(mainBoardSymbol, {
+      x: mainBoardSymbolFinalPos.x,
+      y: mainBoardSymbolFinalPos.y
+    }, { duration: 0.4 });
+    
+    await Promise.all([viewerAnimation, mainBoardAnimation]);
+    
+    logicContext.viewerBoard.removeChild(viewerSymbol);
+    logicContext.mainBoard.removeChild(mainBoardSymbol);
+    
+    logicContext.mainBoard.addChild(viewerSymbol);
+    logicContext.viewerBoard.addChild(mainBoardSymbol);
+    
+    viewerSymbol.x = mainBoardCellPos.x;
+    viewerSymbol.y = mainBoardCellPos.y;
+    viewerSymbol.setBoardPosition(targetGridPosition.row, targetGridPosition.col);
+    viewerSymbol.snapToPosition(mainBoardCellPos.x, mainBoardCellPos.y);
+    
+    mainBoardSymbol.x = viewerCellPos.x;
+    mainBoardSymbol.y = viewerCellPos.y;
+    mainBoardSymbol.removeBoardPosition();
+    mainBoardSymbol.snapToPosition(viewerCellPos.x, viewerCellPos.y);
+    mainBoardSymbol.originalPosition = { x: viewerCellPos.x, y: viewerCellPos.y };
+    
+    logicContext.mainSymbols[targetGridPosition.row][targetGridPosition.col] = viewerSymbol;
+    logicContext.viewerSymbols[viewerIndex] = mainBoardSymbol;
   }
 }

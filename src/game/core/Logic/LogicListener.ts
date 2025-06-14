@@ -60,10 +60,10 @@ export class LogicListener {
   }
   
   private handleDraggingStarted(context: any): void {
-    console.log('[LogicListener] Dragging started for symbol:', context.draggedSymbol);
+    // console.log('[LogicListener] Dragging started for symbol:', context.draggedSymbol);
   }
   
   private handleHoveringStarted(context: any): void {
-    console.log('[LogicListener] Hovering started for symbol:', context.hoveredSymbol);
+    // console.log('[LogicListener] Hovering started for symbol:', context.hoveredSymbol);
   }
 }

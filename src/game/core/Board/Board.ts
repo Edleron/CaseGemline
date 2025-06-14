@@ -55,8 +55,9 @@ export class Board extends Container {
   }
 
   public getGridPositionFromCoords(x: number, y: number): { row: number; col: number } {
-    const col = Math.floor(x / this.cellSize);
-    const row = Math.floor(y / this.cellSize);
+    const col = (x / this.cellSize) % 1 >= 0.5 ? Math.ceil(x / this.cellSize) : Math.floor(x / this.cellSize);
+    const row = (y / this.cellSize) % 1 >= 0.5 ? Math.ceil(y / this.cellSize) : Math.floor(y / this.cellSize);
+    console.log(x, y, col, row);
     return { row, col };
   }
 }
