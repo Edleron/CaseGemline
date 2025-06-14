@@ -72,6 +72,11 @@ export class DropValidationLogic implements ILogic {
     targetGridPosition: { row: number; col: number },
     logicContext: ILogicContext
   ): Promise<void> {    
+    // Bring main board symbol to front for proper z-index during animation
+    if (mainBoardSymbol.parent) {
+      mainBoardSymbol.parent.setChildIndex(mainBoardSymbol, mainBoardSymbol.parent.children.length - 1);
+    }
+    
     // Get positions
     const viewerOriginalPos = viewerSymbol.originalPosition;
     const mainBoardCellPos = logicContext.mainBoard.getCellPosition(targetGridPosition.row, targetGridPosition.col);
@@ -100,11 +105,11 @@ export class DropValidationLogic implements ILogic {
     
     await Promise.all([viewerAnimation, mainBoardAnimation]);
     
-    logicContext.viewerBoard.removeChild(viewerSymbol);
-    logicContext.mainBoard.removeChild(mainBoardSymbol);
+    logicContext.viewerContainer.removeChild(viewerSymbol);
+    logicContext.mainContainer.removeChild(mainBoardSymbol);
     
-    logicContext.mainBoard.addChild(viewerSymbol);
-    logicContext.viewerBoard.addChild(mainBoardSymbol);
+    logicContext.mainContainer.addChild(viewerSymbol);
+    logicContext.viewerContainer.addChild(mainBoardSymbol);
     
     viewerSymbol.x = mainBoardCellPos.x;
     viewerSymbol.y = mainBoardCellPos.y;

@@ -10,6 +10,8 @@ import { ILogicContext } from "./Logic/ILogic";
 
 export class Core extends Container {
   private config: Config;
+  private mainContainer: Container;
+  private viewerContainer: Container;
   private mainBoard: Board;
   private viewerBoard: Board;
   private mainSymbols: Symbol[][] = [];
@@ -29,17 +31,23 @@ export class Core extends Container {
     
     // Create main board
     this.mainBoard = new Board(this.config);
+    this.mainContainer = new Container();
     
     // Create viewer board (1 row, 3 columns)
     const viewerConfig = { ...this.config, rows: 1, columns: 3 };
     this.viewerBoard = new Board(viewerConfig);
+    this.viewerContainer = new Container();
     
     // Position viewer board below main board
     this.viewerBoard.x = 128
     this.viewerBoard.y = this.mainBoard.height + 50;
+    this.viewerContainer.x = 128;
+    this.viewerContainer.y = this.mainBoard.height + 50;
     
     this.addChild(this.mainBoard);
     this.addChild(this.viewerBoard);
+    this.addChild(this.mainContainer);
+    this.addChild(this.viewerContainer);
     this.initializeSymbols();
     this.setupStateMachineListeners();
 
@@ -47,6 +55,8 @@ export class Core extends Container {
     const logicContext: ILogicContext = {
       mainBoard: this.mainBoard,
       viewerBoard: this.viewerBoard,
+      mainContainer: this.mainContainer,
+      viewerContainer: this.viewerContainer,
       mainSymbols: this.mainSymbols,
       viewerSymbols: this.viewerSymbols,
       config: this.config
@@ -107,7 +117,7 @@ export class Core extends Container {
     symbol.name = `mainSymbol-${row}-${col}`;
     
     this.mainSymbols[row][col] = symbol;
-    this.mainBoard.addChild(symbol);
+    this.mainContainer.addChild(symbol);
   }
 
   private createViewerBoardSymbolAt(col: number): void {
@@ -126,7 +136,7 @@ export class Core extends Container {
     // DON'T setup symbol event handlers here - wait for drop animation to complete
     
     this.viewerSymbols[col] = symbol;
-    this.viewerBoard.addChild(symbol);
+    this.viewerContainer.addChild(symbol);
   }
 
   private setupSymbolEventHandlers(symbol: Symbol): void {
