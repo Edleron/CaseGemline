@@ -1,12 +1,10 @@
 
-export const ValidModes = ['test', 'easy', 'normal', 'hard'] as const;
+export const ValidModes = ['easy', 'normal', 'hard'] as const;
 export type Mode = (typeof ValidModes)[number];
-const blocks: Record<Mode | 'special', string[]> = {
-    test:       ['gem_blue.png', 'gem_green.png', 'gem_pink.png'],
-    easy:       ['gem_blue.png', 'gem_green.png', 'gem_pink.png', 'gem_yellow.png'],
-    normal:     ['gem_blue.png', 'gem_green.png', 'gem_pink.png', 'gem_yellow.png', ],
-    hard:       ['gem_blue.png', 'gem_green.png', 'gem_pink.png', 'gem_yellow.png', ],
-    special:    ['gem_blue.png', 'gem_green.png', 'gem_pink.png', 'gem_yellow.png', ],
+const blocks: Record<Mode, string[]> = {
+    easy:       ['gem_blue.png', 'gem_green.png'],
+    normal:     ['gem_blue.png', 'gem_green.png', 'gem_pink.png',],
+    hard:       ['gem_blue.png', 'gem_green.png', 'gem_pink.png', 'gem_yellow.png'],
 };
 
 const defaultConfig = {
@@ -26,5 +24,5 @@ export function GetConfig(customConfig: Partial<Config> = {}): Config {
 }
 
 export function GetSymbols(mode: Mode): string[] {
-    return [...blocks[mode], ...blocks.special];
+    return [...blocks[mode], ...blocks.easy];
 }

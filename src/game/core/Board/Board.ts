@@ -1,6 +1,7 @@
 import { Container, Texture } from "pixi.js";
 import { Cell } from "./Cell";
 import { Config, GetConfig,  } from "../Constants/Configt";
+import { Symbol } from "../Symbol/Symbol";
 
 export class Board extends Container {
   readonly cellSize: number;
@@ -29,7 +30,16 @@ export class Board extends Container {
 
         cell.x = col * this.cellSize;
         cell.y = row * this.cellSize;
+
+        let symbol = new Symbol();
+        symbol.width = this.cellSize;
+        symbol.height = this.cellSize;
+
+        symbol.x = col * this.cellSize;
+        symbol.y = row * this.cellSize;
+
         this.addChild(cell);
+        this.addChild(symbol);
       }
     }
   }
