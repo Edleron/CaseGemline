@@ -1,6 +1,5 @@
 import { FancyButton } from "@pixi/ui";
 import { animate } from "motion";
-import type { AnimationPlaybackControls } from "motion/react";
 import type { Ticker } from "pixi.js";
 import { Container } from "pixi.js";
 
@@ -152,14 +151,16 @@ export class MainScreen extends Container {
       game(),
     ];
 
-    let finalPromise!: AnimationPlaybackControls;
+    let finalPromise!: Promise<void>;
     for (const element of elementsToAnimate) {
       element.alpha = 0;
       finalPromise = animate(
         element,
         { alpha: 1 },
         { duration: 0.3, delay: 0.75, ease: "backOut" },
-      );
+      ).then(() => {
+        game().fade()
+      });
     }
 
     await finalPromise;

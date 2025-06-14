@@ -1,15 +1,14 @@
 import { Container, Texture } from "pixi.js";
 import { Cell } from "./Cell";
-import { Config, GetConfig,  } from "../Constants/Configt";
-import { Symbol } from "../Symbol/Symbol";
+import { Config, GetConfig } from "../Constants/Configt";
 
 export class Board extends Container {
   readonly cellSize: number;
   readonly gridRows: number;
   readonly gridColumns: number;
-  readonly textureCapsule = [];
   readonly texture: Texture;
   private config: Config;
+  private cells: Cell[][] = [];
 
   constructor(customConfig?: Partial<Config>) {
     super();
@@ -21,26 +20,43 @@ export class Board extends Container {
     this.createGrid();
   }
 
-  private createGrid() {
+  private createGrid(): void {
+    // Initialize cells array
+    for (let row = 0; row < this.gridRows; row++) {
+      this.cells[row] = [];
+    }
+
     for (let row = 0; row < this.gridRows; row++) {
       for (let col = 0; col < this.gridColumns; col++) {
         const cell = new Cell(this.texture);
         cell.width = this.cellSize;
         cell.height = this.cellSize;
-
         cell.x = col * this.cellSize;
         cell.y = row * this.cellSize;
-
-        let symbol = new Symbol();
-        symbol.width = this.cellSize;
-        symbol.height = this.cellSize;
-
-        symbol.x = col * this.cellSize;
-        symbol.y = row * this.cellSize;
-
+        
+        this.cells[row][col] = cell;
         this.addChild(cell);
-        this.addChild(symbol);
       }
     }
+  }
+
+  public getCellAt(row: number, col: number): Cell | null {
+    if (row >= 0 && row < this.gridRows && col >= 0 && col < this.gridColumns) {
+      return this.cells[row][col];
+    }
+    return null;
+  }
+
+  public getCellPosition(row: number, col: number): { x: number; y: number } {
+    return {
+      x: col * this.cellSize,
+      y: row * this.cellSize
+    };
+  }
+
+  public getGridPositionFromCoords(x: number, y: number): { row: number; col: number } {
+    const col = Math.floor(x / this.cellSize);
+    const row = Math.floor(y / this.cellSize);
+    return { row, col };
   }
 }

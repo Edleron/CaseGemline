@@ -23,11 +23,9 @@ export class Symbol extends Sprite {
     this.name = "Symbol";
     this.anchor.set(0);
     this.originalAlpha = 1;
-
-    this.setupInteractivity();
   }
 
-  private setupInteractivity(): void {
+  public setupInteractivity(): void {
     this.eventMode = "static";
     this.cursor = "pointer";
 
