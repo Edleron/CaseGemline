@@ -1,6 +1,6 @@
 import { Actor } from 'xstate';
 import { ILogicContext } from './ILogic';
-import { DropValidationLogic } from './DropValidationLogic';
+import { DropValidationLogic } from './ValidationLogic';
 
 export class LogicListener {
   private stateMachine: Actor<any>;
