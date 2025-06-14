@@ -306,6 +306,9 @@ export class Core extends Container {
       return;
     }
 
+    // Clear stale references in logic listener BEFORE destroying symbols
+    this.logicListener.clearStaleReferences();
+
     // Clear existing symbols from main board
     for (let row = 0; row < this.config.rows; row++) {
       for (let col = 0; col < this.config.columns; col++) {
@@ -332,6 +335,19 @@ export class Core extends Container {
 
     // Reinitialize all symbols
     this.initializeSymbols();
+    
+    // Update LogicListener context with new arrays
+    const updatedLogicContext: ILogicContext = {
+      mainBoard: this.mainBoard,
+      viewerBoard: this.viewerBoard,
+      mainContainer: this.mainContainer,
+      viewerContainer: this.viewerContainer,
+      mainSymbols: this.mainSymbols,
+      viewerSymbols: this.viewerSymbols,
+      config: this.config
+    };
+    
+    this.logicListener.updateContext(updatedLogicContext);
     
     // Start drop animation
     this.startDropAnimation();

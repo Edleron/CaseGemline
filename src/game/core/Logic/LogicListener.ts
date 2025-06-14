@@ -7,13 +7,22 @@ export class LogicListener {
   private logicContext: ILogicContext;
   private dropValidationLogic: DropValidationLogic;
   private lastState: string = '';
-  private lastDraggedSymbol: any = null; // Son dragged symbol'ü sakla
+  private lastDraggedSymbol: any = null;
   
   constructor(stateMachine: Actor<any>, logicContext: ILogicContext) {
     this.stateMachine = stateMachine;
     this.logicContext = logicContext;
     this.dropValidationLogic = new DropValidationLogic();
     this.setupListeners();
+  }
+  
+  public clearStaleReferences(): void {
+    this.lastDraggedSymbol = null;
+    this.lastState = '';
+  }
+  
+  public updateContext(newContext: ILogicContext): void {
+    this.logicContext = newContext;
   }
   
   private setupListeners(): void {
@@ -52,6 +61,10 @@ export class LogicListener {
   
   private async handleDropCompleted(): Promise<void> {
     try {
+      if (!this.lastDraggedSymbol) {
+        return;
+      }
+      
       const mockContext = { draggedSymbol: this.lastDraggedSymbol };
       await this.dropValidationLogic.execute(mockContext, this.logicContext);
     } catch (error) {
