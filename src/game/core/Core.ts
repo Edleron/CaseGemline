@@ -5,6 +5,8 @@ import { Symbol } from "./Symbol/Symbol";
 import { Config, GetConfig } from "./Constants/Configt";
 import { UIStateMachine } from "./State/Machine";
 import { animate } from "motion";
+import { LogicListener } from "./Logic/LogicListener";
+import { ILogicContext } from "./Logic/ILogic";
 
 export class Core extends Container {
   private config: Config;
@@ -15,6 +17,7 @@ export class Core extends Container {
   private stateMachine: ReturnType<typeof createActor>;
   private lastLoggedState: string = '';
   private isCoreReady: boolean = false;
+  private logicListener: LogicListener;
 
   constructor(customConfig?: Partial<Config>) {
     super();
@@ -39,6 +42,17 @@ export class Core extends Container {
     this.addChild(this.viewerBoard);
     this.initializeSymbols();
     this.setupStateMachineListeners();
+
+    // Initialize logic listener after boards are created
+    const logicContext: ILogicContext = {
+      mainBoard: this.mainBoard,
+      viewerBoard: this.viewerBoard,
+      mainSymbols: this.mainSymbols,
+      viewerSymbols: this.viewerSymbols,
+      config: this.config
+    };
+    
+    this.logicListener = new LogicListener(this.stateMachine, logicContext);
   }
 
   private setupStateMachineListeners(): void {
