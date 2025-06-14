@@ -14,7 +14,9 @@
     "@pixi/sound": "^6.0.1",
     "@pixi/ui": "^2.2.2",
     "motion": "^12.4.7",
-    "pixi.js": "^8.8.1"
+    "pixi.js": "^8.8.1",
+    "xstate": "^5.19.4",
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@assetpack/core": "^1.4.0",
