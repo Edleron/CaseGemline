@@ -46,7 +46,7 @@ export class Symbol extends Sprite {
 
   private onHover = (): void => {
     if (!this.isDragging) {
-      this.alpha = 0.9;
+      this.alpha = 0.75;
       // Emit hover start event for state machine
       this.emit('hoverStart', this);
     }
@@ -62,7 +62,7 @@ export class Symbol extends Sprite {
 
   private onDragStart = (event: FederatedPointerEvent): void => {
     this.isDragging = true;
-    this.alpha = 0.8;
+    this.alpha = 0.5;
 
     // Store the original position
     this.originalPosition = { x: this.x, y: this.y };

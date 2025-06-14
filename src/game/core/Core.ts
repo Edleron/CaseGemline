@@ -149,14 +149,6 @@ export class Core extends Container {
       });
     });
 
-    // Handle symbol drag move - REMOVE this to reduce spam
-    // symbol.on('dragMove', (symbolInstance: Symbol, position: { x: number; y: number }) => {
-    //   this.stateMachine.send({
-    //     type: 'symboldragmove',
-    //     position
-    //   });
-    // });
-
     // Handle symbol drag end
     symbol.on('dragEnd', (symbolInstance: Symbol, position: { x: number; y: number }) => {
       // console.log('[Symbol Event] Drag End');
@@ -187,6 +179,23 @@ export class Core extends Container {
     });
   }
 
+  private removeSymbolEventHandlers(symbol: Symbol): void {
+    symbol.off('dragStart');
+    symbol.off('dragEnd');
+    symbol.off('hoverStart');
+    symbol.off('hoverEnd');
+    symbol.hasEventListeners = false;
+  }
+
+
+  private onSymbolMainBoardComplete(): void {
+    // console.log('[Core] Main symbols dropped - ready for interaction');
+  }
+
+  private onSymbolViewerBoardComplete(): void {
+    this.isCoreReady = true;
+    // console.log('[Core] Viewer symbols dropped - ready for interaction');
+  }
 
   public startDropAnimation(): void {
     this.isCoreReady = false; // Reset ready state
@@ -270,15 +279,6 @@ export class Core extends Container {
     );
   }
 
-  private onSymbolMainBoardComplete(): void {
-    // console.log('[Core] Main symbols dropped - ready for interaction');
-  }
-
-  private onSymbolViewerBoardComplete(): void {
-    this.isCoreReady = true;
-    // console.log('[Core] Viewer symbols dropped - ready for interaction');
-  }
-
   public getIsDropping(): boolean {
     return this.isCoreReady;
   }
@@ -311,7 +311,8 @@ export class Core extends Container {
       for (let col = 0; col < this.config.columns; col++) {
         const symbol = this.mainSymbols[row][col];
         if (symbol) {
-          this.mainBoard.removeChild(symbol);
+          this.removeSymbolEventHandlers(symbol);
+          this.mainContainer.removeChild(symbol);
           symbol.destroy();
           this.mainSymbols[row][col] = null as any;
         }
@@ -322,7 +323,8 @@ export class Core extends Container {
     for (let col = 0; col < 3; col++) {
       const symbol = this.viewerSymbols[col];
       if (symbol) {
-        this.viewerBoard.removeChild(symbol);
+        this.removeSymbolEventHandlers(symbol);
+        this.viewerContainer.removeChild(symbol);
         symbol.destroy();
       }
     }

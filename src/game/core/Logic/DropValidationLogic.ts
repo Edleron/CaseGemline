@@ -22,10 +22,7 @@ export class DropValidationLogic implements ILogic {
 
       const mainBoardLocalPos = logicContext.mainBoard.toLocal(symbolGlobalPosition);
       const gridPosition = logicContext.mainBoard.getGridPositionFromCoords(mainBoardLocalPos.x, mainBoardLocalPos.y);
-
       const targetSymbol = logicContext.mainSymbols[gridPosition.row]?.[gridPosition.col];
-      console.log(mainBoardLocalPos, gridPosition, targetSymbol);
-
       if (targetSymbol) {
         await this.swapSymbols(draggedSymbol, targetSymbol, gridPosition, logicContext);
       } else {
@@ -67,62 +64,84 @@ export class DropValidationLogic implements ILogic {
   }
   
   private async swapSymbols(
-    viewerSymbol: any, 
-    mainBoardSymbol: any, 
-    targetGridPosition: { row: number; col: number },
+    dragSymbol: any, 
+    targetSymbol: any, 
+    gridPosition: { row: number; col: number },
     logicContext: ILogicContext
   ): Promise<void> {    
-    // Bring main board symbol to front for proper z-index during animation
-    if (mainBoardSymbol.parent) {
-      mainBoardSymbol.parent.setChildIndex(mainBoardSymbol, mainBoardSymbol.parent.children.length - 1);
-    }
+    // Bring target symbol to front for proper z-index
+    targetSymbol.parent.setChildIndex(targetSymbol, targetSymbol.parent.children.length - 1);
     
-    // Get positions
-    const viewerOriginalPos = viewerSymbol.originalPosition;
-    const mainBoardCellPos = logicContext.mainBoard.getCellPosition(targetGridPosition.row, targetGridPosition.col);
+    // Execute both animations in parallel
+    await Promise.all([
+      this.moveDragSymbolToMainBoard(dragSymbol, gridPosition, logicContext),
+      this.moveTargetSymbolToViewerBoard(targetSymbol, dragSymbol, logicContext)
+    ]);
     
-    const viewerIndex = logicContext.viewerSymbols.indexOf(viewerSymbol);
-    const viewerCellPos = logicContext.viewerBoard.getCellPosition(0, viewerIndex);
-    
+    // Update data structures
+    this.updateSymbolArrays(dragSymbol, targetSymbol, gridPosition, logicContext);
+  }
+  
+  
+  private async moveDragSymbolToMainBoard(
+    dragSymbol: any, 
+    gridPosition: { row: number; col: number }, 
+    logicContext: ILogicContext
+  ): Promise<void> {
+    const mainBoardCellPos = logicContext.mainBoard.getCellPosition(gridPosition.row, gridPosition.col);
     const mainBoardGlobalPos = logicContext.mainBoard.toGlobal(mainBoardCellPos);
-    const viewerSymbolFinalPos = viewerSymbol.parent.toLocal(mainBoardGlobalPos);
+    const finalPos = dragSymbol.parent.toLocal(mainBoardGlobalPos);
     
-
+    // Animate to final position
+    await dragSymbol.position.set(finalPos.x, finalPos.y);
+    
+    // Move to main container and set final position
+    logicContext.viewerContainer.removeChild(dragSymbol);
+    logicContext.mainContainer.addChild(dragSymbol);
+    
+    dragSymbol.x = mainBoardCellPos.x;
+    dragSymbol.y = mainBoardCellPos.y;
+    dragSymbol.setBoardPosition(gridPosition.row, gridPosition.col);
+    dragSymbol.snapToPosition(mainBoardCellPos.x, mainBoardCellPos.y);
+  }
+  
+  private async moveTargetSymbolToViewerBoard(
+    targetSymbol: any, 
+    dragSymbol: any, 
+    logicContext: ILogicContext
+  ): Promise<void> {
+    const viewerIndex = logicContext.viewerSymbols.indexOf(dragSymbol);
+    const viewerCellPos = logicContext.viewerBoard.getCellPosition(0, viewerIndex);
     const viewerBoardGlobalPos = logicContext.viewerBoard.toGlobal(viewerCellPos);
-    const mainBoardSymbolFinalPos = mainBoardSymbol.parent.toLocal(viewerBoardGlobalPos);
+    const finalPos = targetSymbol.parent.toLocal(viewerBoardGlobalPos);
     
-    
-    const viewerAnimation = animate(viewerSymbol, {
-      x: viewerSymbolFinalPos.x,
-      y: viewerSymbolFinalPos.y
-    }, { duration: 0 });
-    
-    
-    const mainBoardAnimation = animate(mainBoardSymbol, {
-      x: mainBoardSymbolFinalPos.x,
-      y: mainBoardSymbolFinalPos.y
+    console.log(finalPos, viewerBoardGlobalPos, viewerCellPos, viewerIndex);
+    // Animate to final position
+    await animate(targetSymbol, {
+      x: finalPos.x,
+      y: finalPos.y
     }, { duration: 0.4 });
     
-    await Promise.all([viewerAnimation, mainBoardAnimation]);
+    // Move to viewer container and set final position
+    logicContext.mainContainer.removeChild(targetSymbol);
+    logicContext.viewerContainer.addChild(targetSymbol);
     
-    logicContext.viewerContainer.removeChild(viewerSymbol);
-    logicContext.mainContainer.removeChild(mainBoardSymbol);
+    targetSymbol.x = viewerCellPos.x;
+    targetSymbol.y = viewerCellPos.y;
+    targetSymbol.removeBoardPosition();
+    targetSymbol.snapToPosition(viewerCellPos.x, viewerCellPos.y);
+    targetSymbol.originalPosition = { x: viewerCellPos.x, y: viewerCellPos.y };
+  }
+  
+  private updateSymbolArrays(
+    dragSymbol: any, 
+    targetSymbol: any, 
+    gridPosition: { row: number; col: number }, 
+    logicContext: ILogicContext
+  ): void {
+    const viewerIndex = logicContext.viewerSymbols.indexOf(dragSymbol);
     
-    logicContext.mainContainer.addChild(viewerSymbol);
-    logicContext.viewerContainer.addChild(mainBoardSymbol);
-    
-    viewerSymbol.x = mainBoardCellPos.x;
-    viewerSymbol.y = mainBoardCellPos.y;
-    viewerSymbol.setBoardPosition(targetGridPosition.row, targetGridPosition.col);
-    viewerSymbol.snapToPosition(mainBoardCellPos.x, mainBoardCellPos.y);
-    
-    mainBoardSymbol.x = viewerCellPos.x;
-    mainBoardSymbol.y = viewerCellPos.y;
-    mainBoardSymbol.removeBoardPosition();
-    mainBoardSymbol.snapToPosition(viewerCellPos.x, viewerCellPos.y);
-    mainBoardSymbol.originalPosition = { x: viewerCellPos.x, y: viewerCellPos.y };
-    
-    logicContext.mainSymbols[targetGridPosition.row][targetGridPosition.col] = viewerSymbol;
-    logicContext.viewerSymbols[viewerIndex] = mainBoardSymbol;
+    logicContext.mainSymbols[gridPosition.row][gridPosition.col] = dragSymbol;
+    logicContext.viewerSymbols[viewerIndex] = targetSymbol;
   }
 }
