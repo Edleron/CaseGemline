@@ -1,6 +1,7 @@
 import { ILogic, ILogicContext } from "./ILogic";
 import { animate } from "motion";
 import { Store } from "../../Store/Store";
+import { MatchRules, MatchResult } from "../Rules/MatchRules";
 
 export class ValidationLogic implements ILogic {
   
@@ -89,8 +90,124 @@ export class ValidationLogic implements ILogic {
 
     // Update interactivity
     this.updateSymbolInteractivity(dragSymbol, targetSymbol, logicContext);
+    
+    // Check for matches after swap
+    const matchResult = this.checkMatchesAroundPosition(gridPosition, logicContext);
+    if (matchResult.hasMatches) {
+      console.log('🎉 MATCH BULUNDU!', matchResult.matches.length, 'adet match');
+      matchResult.matches.forEach((match, index) => {
+        console.log(`Match ${index + 1}:`, match.direction, match.positions.length, 'symbol', match.symbolType);
+        console.log('Pozisyonlar:', match.positions.map(pos => `(${pos.row},${pos.col})`).join(' '));
+      });
+      console.log('Tüm match pozisyonları:', matchResult.allMatchedPositions.map(pos => `(${pos.row},${pos.col})`).join(' '));
+    } else {
+      console.log('❌ Match bulunamadı');
+    }
   }
   
+  private checkMatchesAroundPosition(position: { row: number; col: number }, logicContext: ILogicContext): MatchResult {
+    const matches: any[] = [];
+    const allMatchedPositions: { row: number; col: number }[] = [];
+    
+    // Yatay match kontrolü
+    const horizontalMatch = this.checkHorizontalMatch(position, logicContext);
+    if (horizontalMatch) {
+      matches.push(horizontalMatch);
+      allMatchedPositions.push(...horizontalMatch.positions);
+    }
+    
+    // Dikey match kontrolü
+    const verticalMatch = this.checkVerticalMatch(position, logicContext);
+    if (verticalMatch) {
+      matches.push(verticalMatch);
+      allMatchedPositions.push(...verticalMatch.positions);
+    }
+    
+    return {
+      hasMatches: matches.length > 0,
+      matches,
+      allMatchedPositions
+    };
+  }
+  
+  private checkHorizontalMatch(position: { row: number; col: number }, logicContext: ILogicContext): any | null {
+    const centerSymbol = logicContext.mainSymbols[position.row]?.[position.col];
+    if (!MatchRules.isValidSymbol(centerSymbol)) return null;
+    
+    const symbolType = centerSymbol.getSymbolType();
+    const matchPositions: { row: number; col: number }[] = [position];
+    
+    // Sola doğru kontrol et
+    for (let col = position.col - 1; col >= 0; col--) {
+      if (!MatchRules.isValidPosition(position.row, col, logicContext.config.rows, logicContext.config.columns)) break;
+      
+      const leftSymbol = logicContext.mainSymbols[position.row]?.[col];
+      if (!MatchRules.isValidSymbol(leftSymbol) || !MatchRules.isValidMatch(symbolType, leftSymbol.getSymbolType())) break;
+      
+      matchPositions.unshift({ row: position.row, col });
+    }
+    
+    // Sağa doğru kontrol et
+    for (let col = position.col + 1; col < logicContext.config.columns; col++) {
+      if (!MatchRules.isValidPosition(position.row, col, logicContext.config.rows, logicContext.config.columns)) break;
+      
+      const rightSymbol = logicContext.mainSymbols[position.row]?.[col];
+      if (!MatchRules.isValidSymbol(rightSymbol) || !MatchRules.isValidMatch(symbolType, rightSymbol.getSymbolType())) break;
+      
+      matchPositions.push({ row: position.row, col });
+    }
+    
+    // 3+ match var mı kontrol et
+    if (MatchRules.hasMinimumCount(matchPositions.length)) {
+      return {
+        positions: matchPositions,
+        symbolType,
+        direction: 'horizontal'
+      };
+    }
+    
+    return null;
+  }
+  
+  private checkVerticalMatch(position: { row: number; col: number }, logicContext: ILogicContext): any | null {
+    const centerSymbol = logicContext.mainSymbols[position.row]?.[position.col];
+    if (!MatchRules.isValidSymbol(centerSymbol)) return null;
+    
+    const symbolType = centerSymbol.getSymbolType();
+    const matchPositions: { row: number; col: number }[] = [position];
+    
+    // Yukarı doğru kontrol et
+    for (let row = position.row - 1; row >= 0; row--) {
+      if (!MatchRules.isValidPosition(row, position.col, logicContext.config.rows, logicContext.config.columns)) break;
+      
+      const upSymbol = logicContext.mainSymbols[row]?.[position.col];
+      if (!MatchRules.isValidSymbol(upSymbol) || !MatchRules.isValidMatch(symbolType, upSymbol.getSymbolType())) break;
+      
+      matchPositions.unshift({ row, col: position.col });
+    }
+    
+    // Aşağı doğru kontrol et
+    for (let row = position.row + 1; row < logicContext.config.rows; row++) {
+      if (!MatchRules.isValidPosition(row, position.col, logicContext.config.rows, logicContext.config.columns)) break;
+      
+      const downSymbol = logicContext.mainSymbols[row]?.[position.col];
+      if (!MatchRules.isValidSymbol(downSymbol) || !MatchRules.isValidMatch(symbolType, downSymbol.getSymbolType())) break;
+      
+      matchPositions.push({ row, col: position.col });
+    }
+    
+    // 3+ match var mı kontrol et
+    if (MatchRules.hasMinimumCount(matchPositions.length)) {
+      return {
+        positions: matchPositions,
+        symbolType,
+        direction: 'vertical'
+      };
+    }
+    
+    return null;
+  }
+
   private async moveDragSymbolToMainBoard(
     dragSymbol: any, 
     gridPosition: { row: number; col: number }, 
