@@ -16,14 +16,14 @@ export class MainScreen extends Container {
   /** Assets bundles required by this screen */
   public static assetBundles = ["main"];
 
-  public mainContainer    : Container;
-  public uiContainer!      : Container;
-  private pauseButton!: FancyButton;
-  private settingsButton!  : FancyButton;
-  private addButton!       : FancyButton;
-  private removeButton!    : FancyButton;
-  private bouncer         : Bouncer;
-  private paused = false;
+  public mainContainer      : Container;
+  public uiContainer!       : Container;
+  private pauseButton!      : FancyButton;
+  private settingsButton!   : FancyButton;
+  private addButton!        : FancyButton;
+  private removeButton!     : FancyButton;
+  private bouncer           : Bouncer;
+  private paused            = false;
 
   constructor() {
     super();
@@ -81,7 +81,11 @@ export class MainScreen extends Container {
       width: 268,
       height: 71,
     });
-    this.addButton.onPress.connect(() => this.bouncer.add());
+    this.addButton.onPress.connect(() => {
+      if (game().isReady()) {
+        game().reset();
+      }
+    });
     this.uiContainer.addChild(this.addButton);
 
     this.removeButton = new Button({
@@ -100,6 +104,20 @@ export class MainScreen extends Container {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public update(_time: Ticker) {
     if (this.paused) return;
+    
+    // Update button state based on viewer symbols readiness
+    const isViewerReady = game().isReady();
+    this.addButton.enabled = isViewerReady;
+    
+    // Visual feedback for disabled state
+    if (!isViewerReady) {
+      this.addButton.alpha = 0.5;
+      this.addButton.cursor = 'not-allowed';
+    } else {
+      this.addButton.alpha = 1;
+      this.addButton.cursor = 'pointer';
+    }
+    
     this.bouncer.update();
   }
 
@@ -159,12 +177,13 @@ export class MainScreen extends Container {
         { alpha: 1 },
         { duration: 0.3, delay: 0.75, ease: "backOut" },
       ).then(() => {
-        game().fade()
       });
     }
 
     await finalPromise;
+
     this.bouncer.show(this);
+    game().fade()
   }
 
   /** Hide screen with animations */

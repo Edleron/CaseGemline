@@ -14,6 +14,7 @@ export class Core extends Container {
   private viewerSymbols: Symbol[] = [];
   private stateMachine: ReturnType<typeof createActor>;
   private lastLoggedState: string = '';
+  private isCoreReady: boolean = false;
 
   constructor(customConfig?: Partial<Config>) {
     super();
@@ -106,8 +107,7 @@ export class Core extends Container {
     symbol.y = finalY - this.config.tileSize * 2;
     symbol.alpha = 0;
     
-    // Setup symbol event handlers for state machine (ONLY for viewer symbols)
-    this.setupSymbolEventHandlers(symbol);
+    // DON'T setup symbol event handlers here - wait for drop animation to complete
     
     this.viewerSymbols[col] = symbol;
     this.viewerBoard.addChild(symbol);
@@ -134,7 +134,7 @@ export class Core extends Container {
     // Handle symbol drag end
     symbol.on('dragEnd', (symbolInstance: Symbol, position: { x: number; y: number }) => {
       console.log('[Symbol Event] Drag End');
-      this.handleSymbolDrop(symbolInstance, position);
+      // this.handleSymbolDrop(symbolInstance, position);
       this.stateMachine.send({
         type: 'symboldragend',
         symbol: symbolInstance,
@@ -161,63 +161,10 @@ export class Core extends Container {
     });
   }
 
-  private handleSymbolDrop(symbol: Symbol, globalPosition: { x: number; y: number }): void {
-    // Convert global position to main board local position
-    const localPosition = this.mainBoard.toLocal(globalPosition, this.parent);
-    const gridPosition = this.mainBoard.getGridPositionFromCoords(localPosition.x, localPosition.y);
-    
-    // Check if drop position is valid (within board bounds)
-    if (this.isValidDropPosition(gridPosition.row, gridPosition.col)) {
-      // Check if the cell is empty
-      if (!this.mainSymbols[gridPosition.row][gridPosition.col]) {
-        // Place symbol on main board
-        this.placeSymbolOnMainBoard(symbol, gridPosition.row, gridPosition.col);
-      } else {
-        // Return symbol to original position
-        symbol.returnToOriginalPosition();
-      }
-    } else {
-      // Return symbol to original position
-      symbol.returnToOriginalPosition();
-    }
-  }
-
-  private isValidDropPosition(row: number, col: number): boolean {
-    return row >= 0 && row < this.config.rows && col >= 0 && col < this.config.columns;
-  }
-
-  private placeSymbolOnMainBoard(symbol: Symbol, row: number, col: number): void {
-    const cellPosition = this.mainBoard.getCellPosition(row, col);
-    
-    // Convert from main board local coordinates to symbol's parent coordinates
-    const globalPos = this.mainBoard.toGlobal(cellPosition);
-    const finalPos = symbol.parent!.toLocal(globalPos);
-    
-    // Animate symbol to final position
-    animate(symbol, { x: finalPos.x, y: finalPos.y }, { duration: 0.3 }).then(() => {
-      // Remove from viewer board and add to main board
-      this.viewerBoard.removeChild(symbol);
-      this.mainBoard.addChild(symbol);
-      
-      // Update symbol position and board reference
-      symbol.x = cellPosition.x;
-      symbol.y = cellPosition.y;
-      symbol.setBoardPosition(row, col);
-      symbol.snapToPosition(cellPosition.x, cellPosition.y);
-      
-      // Update main symbols array
-      this.mainSymbols[row][col] = symbol;
-      
-      // Remove from viewer symbols array and create new symbol
-      const viewerIndex = this.viewerSymbols.indexOf(symbol);
-      if (viewerIndex !== -1) {
-        this.createViewerBoardSymbolAt(viewerIndex);
-        this.animateViewerBoardSymbolDrop(this.viewerSymbols[viewerIndex], viewerIndex);
-      }
-    });
-  }
 
   public startDropAnimation(): void {
+    this.isCoreReady = false; // Reset ready state
+
     // Start main board symbols drop animation
     for (let row = 0; row < this.config.rows; row++) {
       for (let col = 0; col < this.config.columns; col++) {
@@ -251,7 +198,7 @@ export class Core extends Container {
     animate(
       symbol,
       { 
-        x: finalX, 
+        // x: finalX, // TODO çift dupliacate için englendi
         y: finalY 
       },
       {
@@ -260,7 +207,7 @@ export class Core extends Container {
         onComplete: () => {
           symbol.snapToPosition(finalX, finalY);
           symbol.setBoardPosition(row, col);
-          // DON'T setup interactivity for main board symbols
+          this.onSymbolMainBoardComplete();
         }
       }
     );
@@ -278,7 +225,7 @@ export class Core extends Container {
     animate(
       symbol,
       { 
-        x: finalX, 
+        // x: finalX, // TODO çift dupliacate için englendi
         y: finalY 
       },
       {
@@ -286,15 +233,29 @@ export class Core extends Container {
         ease: [0.25, 0.46, 0.45, 0.94],
         onComplete: () => {
           symbol.snapToPosition(finalX, finalY);
+          
+          // Setup interactivity and event handlers ONLY after drop animation completes
           symbol.setupInteractivity();
-          // Only setup event handlers once per symbol
-          if (!symbol.hasEventListeners) {
-            this.setupSymbolEventHandlers(symbol);
-            symbol.hasEventListeners = true;
-          }
+          this.setupSymbolEventHandlers(symbol);
+          symbol.hasEventListeners = true;
+          this.onSymbolViewerBoardComplete();
         }
       }
     );
+  }
+
+  private onSymbolMainBoardComplete(): void {
+    
+    console.log('[Core] Main symbols dropped - ready for interaction');
+  }
+
+  private onSymbolViewerBoardComplete(): void {
+    this.isCoreReady = true;
+    console.log('[Core] Viewer symbols dropped - ready for interaction');
+  }
+
+  public getIsDropping(): boolean {
+    return this.isCoreReady;
   }
 
   public getMainBoard(): Board {
@@ -311,5 +272,41 @@ export class Core extends Container {
 
   public getStateMachine() {
     return this.stateMachine;
+  }
+
+  public resetAndRedrop(): void {
+    // Prevent multiple calls during dropping
+    if (!this.isCoreReady) {
+      console.warn('[Core] Already dropping symbols, ignoring reset request');
+      return;
+    }
+
+    // Clear existing symbols from main board
+    for (let row = 0; row < this.config.rows; row++) {
+      for (let col = 0; col < this.config.columns; col++) {
+        const symbol = this.mainSymbols[row][col];
+        if (symbol) {
+          this.mainBoard.removeChild(symbol);
+          symbol.destroy();
+          this.mainSymbols[row][col] = null as any;
+        }
+      }
+    }
+
+    // Clear existing symbols from viewer board
+    for (let col = 0; col < 3; col++) {
+      const symbol = this.viewerSymbols[col];
+      if (symbol) {
+        this.viewerBoard.removeChild(symbol);
+        symbol.destroy();
+      }
+    }
+    this.viewerSymbols = [];
+
+    // Reinitialize all symbols
+    this.initializeSymbols();
+    
+    // Start drop animation
+    this.startDropAnimation();
   }
 }

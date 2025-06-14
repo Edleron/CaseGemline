@@ -19,4 +19,14 @@ export class CreationGame extends Container {
       this.core.startDropAnimation();
     }
   }
+
+  public reset() {
+    if (this.core) {
+      this.core.resetAndRedrop();
+    }
+  }
+
+  public isReady(): boolean {
+    return this.core ? this.core.getIsDropping() : false;
+  }
 }
