@@ -1,6 +1,7 @@
 import { Container } from "pixi.js";
 import { Core } from "./core/Core";
 import { Store } from "./Store/Store";
+import { GameOverPopup } from "../app/popups/GameOverPopup";
 
 export class CreationGame extends Container {
   private core: Core | undefined;
@@ -21,12 +22,30 @@ export class CreationGame extends Container {
       // Check moves changed to 0 (lose condition)
       if (state.moves !== previousState.moves && state.moves === 0) {
         console.log('🔴 KAYBETTINIZ! Hamle sayınız bitti.');
+        this.showGameOverPopup();
       }
       
       // Check score reached 500+ (win condition)
       if (state.score !== previousState.score && state.score >= 500 && previousState.score < 500) {
         console.log('🎉 KAZANDINIZ! 500+ puana ulaştınız!');
+        this.showWinPopup();
       }
+    });
+  }
+
+  private showGameOverPopup(): void {
+    import("../app/popups/GameOverPopup").then(({ GameOverPopup }) => {
+      import("../app/getEngine").then(({ engine }) => {
+        engine().navigation.presentPopup(GameOverPopup);
+      });
+    });
+  }
+
+  private showWinPopup(): void {
+    import("../app/popups/WinPopup").then(({ WinPopup }) => {
+      import("../app/getEngine").then(({ engine }) => {
+        engine().navigation.presentPopup(WinPopup);
+      });
     });
   }
 
@@ -37,6 +56,9 @@ export class CreationGame extends Container {
   }
 
   public reset() {
+    // Reset store first
+    Store.getState().resetGame();
+    
     if (this.core) {
       this.core.resetAndRedrop();
     }

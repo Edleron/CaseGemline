@@ -53,7 +53,8 @@ export const Store = createStore<GameState>((set) => ({
     moves: 25, 
     isGameOver: false,
     draggedSymbol: null,
-    isSwapInProgress: false
+    isSwapInProgress: false,
+    moveFailedCount: 0
   }),
   
   // Logic Actions
