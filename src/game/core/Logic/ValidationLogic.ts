@@ -51,19 +51,13 @@ export class ValidationLogic implements ILogic {
   }
   
   private async processMatches(matchResult: MatchResult, logicContext: ILogicContext): Promise<void> {
-    // console.log('Match işlemi başlatılıyor...');
-    
-    // Duplicate pozisyonları temizle
     const uniquePositions = matchResult.allMatchedPositions.filter((pos, index, self) => 
       index === self.findIndex(p => p.row === pos.row && p.col === pos.col)
     );
-    
     const cleanMatchResult = {
       ...matchResult,
       allMatchedPositions: uniquePositions
     };
-    
-    // MatchingLogic'i çalıştır
     await this.matchingLogic.execute(cleanMatchResult, logicContext);
   }
   
@@ -136,10 +130,7 @@ export class ValidationLogic implements ILogic {
     gridPosition: { row: number; col: number }, 
     logicContext: ILogicContext
   ): MatchResult {
-    // Geçici olarak swap simülasyonu yap (sadece tip kontrolü için)
     const dragSymbolType = dragSymbol.getSymbolType();
-    
-    // Drag symbol'ün o pozisyona koyulduğunu varsayarak match kontrol et
     return this.checkMatchesAroundPositionWithSymbolType(gridPosition, dragSymbolType, logicContext);
   }
   
@@ -151,14 +142,12 @@ export class ValidationLogic implements ILogic {
     const matches: any[] = [];
     const allMatchedPositions: { row: number; col: number }[] = [];
     
-    // Yatay match kontrolü
     const horizontalMatch = this.checkHorizontalMatchWithType(position, symbolType, logicContext);
     if (horizontalMatch) {
       matches.push(horizontalMatch);
       allMatchedPositions.push(...horizontalMatch.positions);
     }
     
-    // Dikey match kontrolü
     const verticalMatch = this.checkVerticalMatchWithType(position, symbolType, logicContext);
     if (verticalMatch) {
       matches.push(verticalMatch);
@@ -179,7 +168,6 @@ export class ValidationLogic implements ILogic {
   ): any | null {
     const matchPositions: { row: number; col: number }[] = [position];
     
-    // Sola doğru kontrol et
     for (let col = position.col - 1; col >= 0; col--) {
       if (!MatchRules.isValidPosition(position.row, col, logicContext.config.rows, logicContext.config.columns)) break;
       
@@ -189,7 +177,6 @@ export class ValidationLogic implements ILogic {
       matchPositions.unshift({ row: position.row, col });
     }
     
-    // Sağa doğru kontrol et
     for (let col = position.col + 1; col < logicContext.config.columns; col++) {
       if (!MatchRules.isValidPosition(position.row, col, logicContext.config.rows, logicContext.config.columns)) break;
       
@@ -199,7 +186,6 @@ export class ValidationLogic implements ILogic {
       matchPositions.push({ row: position.row, col });
     }
     
-    // 3+ match var mı kontrol et
     if (MatchRules.hasMinimumCount(matchPositions.length)) {
       return {
         positions: matchPositions,
@@ -218,7 +204,6 @@ export class ValidationLogic implements ILogic {
   ): any | null {
     const matchPositions: { row: number; col: number }[] = [position];
     
-    // Yukarı doğru kontrol et
     for (let row = position.row - 1; row >= 0; row--) {
       if (!MatchRules.isValidPosition(row, position.col, logicContext.config.rows, logicContext.config.columns)) break;
       
@@ -228,7 +213,6 @@ export class ValidationLogic implements ILogic {
       matchPositions.unshift({ row, col: position.col });
     }
     
-    // Aşağı doğru kontrol et
     for (let row = position.row + 1; row < logicContext.config.rows; row++) {
       if (!MatchRules.isValidPosition(row, position.col, logicContext.config.rows, logicContext.config.columns)) break;
       
@@ -238,7 +222,6 @@ export class ValidationLogic implements ILogic {
       matchPositions.push({ row, col: position.col });
     }
     
-    // 3+ match var mı kontrol et
     if (MatchRules.hasMinimumCount(matchPositions.length)) {
       return {
         positions: matchPositions,
@@ -356,8 +339,6 @@ export class ValidationLogic implements ILogic {
     
     if (failedCount % 2 === 0) {
       this.showHint();
-    } else {
-      // console.log(`Başarısız hamle sayısı: ${failedCount}`);
     }
   }
   
@@ -367,13 +348,11 @@ export class ValidationLogic implements ILogic {
     
     const allHints = [];
     
-    // Tüm mümkün hint'leri topla
     for (let row = 0; row < logicContext.config.rows; row++) {
       for (let col = 0; col < logicContext.config.columns; col++) {
         const symbol = logicContext.mainSymbols[row]?.[col];
         if (!symbol) continue;
         
-        // Yatay kontrol
         const horizontalGroup = this.getHorizontalGroup(row, col, logicContext);
         if (horizontalGroup.length >= MatchRules.MIN_HINT_GROUP_COUNT) {
           allHints.push({
@@ -383,7 +362,6 @@ export class ValidationLogic implements ILogic {
           });
         }
         
-        // Dikey kontrol
         const verticalGroup = this.getVerticalGroup(row, col, logicContext);
         if (verticalGroup.length >= MatchRules.MIN_HINT_GROUP_COUNT) {
           allHints.push({
@@ -395,15 +373,11 @@ export class ValidationLogic implements ILogic {
       }
     }
     
-    // Eğer hint varsa rastgele birini seç
     if (allHints.length > 0) {
       const randomIndex = Math.floor(Math.random() * allHints.length);
       const selectedHint = allHints[randomIndex];
       
       this.highlightGroup(selectedHint.group, logicContext);
-      // console.log(`💡 İpucu: (${selectedHint.startPosition.row},${selectedHint.startPosition.col}) pozisyonunda ${selectedHint.group.length}'li ${selectedHint.type} grup var`);
-    } else {
-      // console.log('😞 Hiç hint bulunamadı');
     }
   }
   
@@ -414,7 +388,6 @@ export class ValidationLogic implements ILogic {
     const group = [{ row, col }];
     const symbolType = symbol.getSymbolType();
     
-    // Sağa doğru grup elemanlarını topla
     for (let c = col + 1; c < logicContext.config.columns; c++) {
       const rightSymbol = logicContext.mainSymbols[row]?.[c];
       if (rightSymbol && MatchRules.isValidMatch(symbolType, rightSymbol.getSymbolType())) {
@@ -432,7 +405,6 @@ export class ValidationLogic implements ILogic {
     const group = [{ row, col }];
     const symbolType = symbol.getSymbolType();
     
-    // Aşağı doğru grup elemanlarını topla
     for (let r = row + 1; r < logicContext.config.rows; r++) {
       const downSymbol = logicContext.mainSymbols[r]?.[col];
       if (downSymbol && MatchRules.isValidMatch(symbolType, downSymbol.getSymbolType())) {
@@ -447,11 +419,11 @@ export class ValidationLogic implements ILogic {
     for (const pos of group) {
       const symbol = logicContext.mainSymbols[pos.row]?.[pos.col];
       if (symbol) {
-        symbol.alpha = 0.5; // Tüm grubu highlight et
+        symbol.alpha = 0.5;
       }
 
       setTimeout(() => {
-        symbol.alpha = 1; // 1 saniye sonra normalleştir
+        symbol.alpha = 1;
       }, 1000);
     }
   }

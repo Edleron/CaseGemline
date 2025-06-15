@@ -76,7 +76,7 @@ export class LogicListener {
     try {
       const storeState = Store.getState();
       const draggedSymbol = storeState.draggedSymbol;
-      const logicContext = storeState.logicContext; // Her zaman güncel context
+      const logicContext = storeState.logicContext;
       
       if (!draggedSymbol || !logicContext) {
         return;
@@ -85,7 +85,6 @@ export class LogicListener {
       storeState.setSwapInProgress(true);
       
       const mockContext = { draggedSymbol };
-      // ValidationLogic içinde store güncellendiği için context her zaman fresh
       await this.validationLogic.execute(mockContext, logicContext);
       
       storeState.setSwapInProgress(false);
