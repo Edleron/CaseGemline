@@ -37,7 +37,7 @@ export class ValidationLogic implements ILogic {
         
         if (this.wouldHaveMatch.hasMatches) {
           await this.swapSymbols(draggedSymbol, targetSymbol, gridPosition, logicContext);
-          Store.getState().incrementMoveCount();
+          Store.getState().decrementMove();
           
         } else {
           console.log('Match bulunamaz - Swap yapılmıyor');

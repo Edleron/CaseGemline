@@ -19,14 +19,40 @@ export class MainScreen extends Container {
   private pauseButton!      : FancyButton;
   private settingsButton!   : FancyButton;
   private addButton!        : FancyButton;
-  private title!            : Label;
+  private score!            : Label;
+  private move!             : Label;
   private paused            = false;
+  private scoreUnsubscribe?: () => void;
+  private moveUnsubscribe?: () => void;
 
   constructor() {
     super();
     game().init();
     this.addChild(game());
     this.createUI();
+    this.setupSubscription();
+  }
+
+  private setupSubscription(): void {
+    this.scoreUnsubscribe = game().subscribeToScore((score: number) => {
+      this.updateScoreDisplay(score);
+    });
+
+    this.moveUnsubscribe = game().subscribeToMove((move: number) => {
+      this.updateMoveDisplay(move);
+    });
+    
+    // Set initial score display
+    this.updateScoreDisplay(game().getCurrentScore());
+    this.updateMoveDisplay(game().getCurrentMove());
+  }
+
+  private updateScoreDisplay(score: number): void {
+    this.score.text = `Toplam Puan: ${score.toLocaleString()}`;
+  }
+
+  private updateMoveDisplay(move: number): void {
+    this.move.text = `Kalan Hamle: ${move.toLocaleString()}`;
   }
 
   private createUI(){
@@ -80,13 +106,21 @@ export class MainScreen extends Container {
     });
     this.uiContainer.addChild(this.addButton);
 
-    this.title = new Label({
+    this.score = new Label({
       text: "Toplam Puan: 0",
       style: { fill: 0xec1561, fontSize: 50 },
     });
-    this.title.x = 200;
-    this.title.y = 400;
-    this.uiContainer.addChild(this.title);
+    this.score.x = 0;
+    this.score.y = 0;
+    this.uiContainer.addChild(this.score);
+
+    this.move = new Label({
+      text: "Kalan Hamle: 25",
+      style: { fill: 0x1565ec, fontSize: 50 },
+    });
+    this.move.x = 0;
+    this.move.y = 0;
+    this.uiContainer.addChild(this.move);
   } 
 
   /** Prepare the screen just before showing */
@@ -122,7 +156,14 @@ export class MainScreen extends Container {
   }
 
   /** Fully reset */
-  public reset() {}
+  public reset() {
+    if (this.scoreUnsubscribe && this.moveUnsubscribe) {
+      this.scoreUnsubscribe();
+      this.moveUnsubscribe
+      this.scoreUnsubscribe = undefined;
+      this.moveUnsubscribe = undefined;
+    }
+  }
 
   /** Resize the screen, fired whenever window size changes */
   public resize(width: number, height: number) {
@@ -140,8 +181,10 @@ export class MainScreen extends Container {
     this.settingsButton.y = 30;
     this.addButton.x = width / 2;
     this.addButton.y = height - 35;
-    this.title.x = width / 2;
-    this.title.y = height - 175;
+    this.score.x = width / 2;
+    this.score.y = height - 200;
+    this.move.x = width / 2;
+    this.move.y = height - 125;
   }
 
   /** Show screen with animations */
@@ -171,7 +214,14 @@ export class MainScreen extends Container {
   }
 
   /** Hide screen with animations */
-  public async hide() {}
+  public async hide() {
+    if (this.scoreUnsubscribe && this.moveUnsubscribe) {
+      this.scoreUnsubscribe();
+      this.moveUnsubscribe();
+      this.scoreUnsubscribe = undefined;
+      this.moveUnsubscribe = undefined;
+    }
+  }
 
   /** Auto pause the app when window go out of focus */
   public blur() {

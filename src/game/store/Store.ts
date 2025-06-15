@@ -22,11 +22,6 @@ interface GameState {
   setSwapInProgress: (inProgress: boolean) => void;
   clearLogicState: () => void;
 
-  // Move Count
-  moveCount: number;
-  incrementMoveCount: () => void;
-  resetMoveCount: () => void;
-
   moveFailedCount: number;
   incrementMoveFailedCount: () => void;
   resetMoveFailedCount: () => void;
@@ -69,11 +64,6 @@ export const Store = createStore<GameState>((set) => ({
     draggedSymbol: null, 
     isSwapInProgress: false 
   }),
-
-  // Move Count
-  moveCount: 0,
-  incrementMoveCount: () => set((state) => ({ moveCount: state.moveCount + 1 })),
-  resetMoveCount: () => set({ moveCount: 0 }),
 
   // Move Count
   moveFailedCount: 0,
