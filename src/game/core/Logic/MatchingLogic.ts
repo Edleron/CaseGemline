@@ -24,6 +24,7 @@ export class MatchingLogic implements ILogic {
     this.updateStore(matchResult, logicContext);
   }
   
+  /*
   private async highlightMatches(matchResult: MatchResult, logicContext: ILogicContext): Promise<void> {    
     const highlightPromises: Promise<void>[] = [];
     
@@ -44,6 +45,7 @@ export class MatchingLogic implements ILogic {
     
     await Promise.all(highlightPromises);
   }
+  */
   
   private async destroyMatches(matchResult: MatchResult, logicContext: ILogicContext): Promise<void> {
     const destroyPromises: Promise<void>[] = [];

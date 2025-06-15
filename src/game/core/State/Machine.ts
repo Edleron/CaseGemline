@@ -1,4 +1,4 @@
-import { assign, emit, setup } from 'xstate';
+import { assign, setup } from 'xstate';
 
 //#region CONSTANTS
 const m_Types = {
@@ -67,7 +67,7 @@ export const UIStateMachine = setup({
             },
         }),
         [m_Actions.drag_end]: assign({
-            draggedSymbol: ({ event }) => {
+            draggedSymbol: () => {
                 return null;
             },
             dropTarget: () => null,
@@ -84,7 +84,7 @@ export const UIStateMachine = setup({
             },
         }),
         [m_Actions.hover_end]: assign({
-            hoveredSymbol: ({ event }) => {
+            hoveredSymbol: () => {
                 return null;
             },
         }),
