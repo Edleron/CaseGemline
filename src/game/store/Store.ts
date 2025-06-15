@@ -30,6 +30,13 @@ interface GameState {
   moveFailedCount: number;
   incrementMoveFailedCount: () => void;
   resetMoveFailedCount: () => void;
+
+  // State Machine
+  stateMachine: any | null;
+  setStateMachine: (machine: any) => void;
+
+  // Score
+  setScore: (score: number) => void;
 }
 
 export const Store = createStore<GameState>((set) => ({
@@ -72,4 +79,11 @@ export const Store = createStore<GameState>((set) => ({
   moveFailedCount: 0,
   incrementMoveFailedCount: () => set((state) => ({ moveFailedCount: state.moveFailedCount + 1 })),
   resetMoveFailedCount: () => set({ moveFailedCount: 0 }),
+
+  // State Machine
+  stateMachine: null,
+  setStateMachine: (machine) => set({ stateMachine: machine }),
+
+  // Score
+  setScore: (score) => set({ score }),
 }));

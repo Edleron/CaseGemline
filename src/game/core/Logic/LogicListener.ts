@@ -18,7 +18,6 @@ export class LogicListener {
     this.unsubscribe = Store.subscribe((state, previousState) => {
       // Check if logic context changed
       if (state.logicContext !== previousState.logicContext) {
-        console.log('[LogicListener] Context updated from store');
         // Context is now automatically available from store when needed
       }
     });
@@ -60,7 +59,6 @@ export class LogicListener {
           await this.handleDropCompleted();
           Store.getState().clearLogicState();
         } else if (this.lastState === 'matching') {
-          console.log('[LogicListener] Match işlemi tamamlandı, idle durumuna geçildi');
         }
         break;
         
@@ -98,17 +96,13 @@ export class LogicListener {
   }
   
   private handleDraggingStarted(_context: any): void {
-    // console.log('[LogicListener] Dragging started');
   }
   
   private handleHoveringStarted(_context: any): void {
-    // console.log('[LogicListener] Hovering started');
   }
   
   private handleMatchingStarted(context: any): void {
-    console.log('[LogicListener] Match işlemi başlatıldı');
     if (context.pendingMatches) {
-      console.log('[LogicListener] Pending matches:', context.pendingMatches);
     }
   }
   

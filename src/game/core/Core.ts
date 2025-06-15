@@ -30,6 +30,9 @@ export class Core extends Container {
     this.stateMachine = createActor(UIStateMachine);
     this.stateMachine.start();
     
+    // Store state machine reference in store for global access
+    Store.getState().setStateMachine(this.stateMachine);
+    
     // Create main board
     this.mainBoard = new Board(this.config);
     this.mainContainer = new Container();
@@ -85,8 +88,6 @@ export class Core extends Container {
       
       // Only log if state actually changed
       if (currentState !== this.lastLoggedState) {
-        // console.log('[State Machine] State changed:', currentState);
-        // console.log('[State Machine] Context:', state.context);
         this.lastLoggedState = currentState;
       }
     });
@@ -155,7 +156,6 @@ export class Core extends Container {
   private setupSymbolEventHandlers(symbol: Symbol): void {
     // Handle symbol drag start
     symbol.on('dragStart', (symbolInstance: Symbol) => {
-      // console.log('[Symbol Event] Drag Start');
       this.stateMachine.send({
         type: 'symboldragstart',
         symbol: symbolInstance
@@ -164,7 +164,6 @@ export class Core extends Container {
 
     // Handle symbol drag end
     symbol.on('dragEnd', (symbolInstance: Symbol, position: { x: number; y: number }) => {
-      // console.log('[Symbol Event] Drag End');
       // this.handleSymbolDrop(symbolInstance, position);
       this.stateMachine.send({
         type: 'symboldragend',
@@ -175,7 +174,6 @@ export class Core extends Container {
 
     // Handle symbol hover start
     symbol.on('hoverStart', (symbolInstance: Symbol) => {
-      // console.log('[Symbol Event] Hover Start');
       this.stateMachine.send({
         type: 'symbolhoverstart',
         symbol: symbolInstance
@@ -184,7 +182,6 @@ export class Core extends Container {
 
     // Handle symbol hover end
     symbol.on('hoverEnd', (symbolInstance: Symbol) => {
-      // console.log('[Symbol Event] Hover End');
       this.stateMachine.send({
         type: 'symbolhoverend',
         symbol: symbolInstance
@@ -202,12 +199,10 @@ export class Core extends Container {
 
 
   private onSymbolMainBoardComplete(): void {
-    // console.log('[Core] Main symbols dropped - ready for interaction');
   }
 
   private onSymbolViewerBoardComplete(): void {
     this.isCoreReady = true;
-    // console.log('[Core] Viewer symbols dropped - ready for interaction');
   }
 
   public startDropAnimation(): void {

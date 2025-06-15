@@ -63,13 +63,11 @@ export const UIStateMachine = setup({
     actions: {
         [m_Actions.drag_start]: assign({
             draggedSymbol: ({ event }) => {
-                // console.log('[Action] drag_start', event);
                 return event.type === m_Types.SYMBOL_DRAG_START ? event.symbol : null;
             },
         }),
         [m_Actions.drag_end]: assign({
             draggedSymbol: ({ event }) => {
-                // console.log('[Action] drag_end', event);
                 return null;
             },
             dropTarget: () => null,
@@ -77,20 +75,16 @@ export const UIStateMachine = setup({
         }),
         [m_Actions.drag_move]: assign({
             dropTarget: ({ event }) => {
-                // console.log('[Action] drag_move', event);
-                // Bu kısımda board pozisyonunu hesaplayabilirsiniz
                 return event.type === m_Types.SYMBOL_DRAG_MOVE ? { row: 0, col: 0 } : null;
             }
         }),
         [m_Actions.hover_start]: assign({
             hoveredSymbol: ({ event }) => {
-                // console.log('[Action] hover_start', event);
                 return event.type === m_Types.SYMBOL_HOVER_START ? event.symbol : null;
             },
         }),
         [m_Actions.hover_end]: assign({
             hoveredSymbol: ({ event }) => {
-                // console.log('[Action] hover_end', event);
                 return null;
             },
         }),

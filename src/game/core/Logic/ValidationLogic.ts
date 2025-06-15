@@ -36,20 +36,13 @@ export class ValidationLogic implements ILogic {
         this.wouldHaveMatch = this.checkPotentialMatch(draggedSymbol, targetSymbol, gridPosition, logicContext);
         
         if (this.wouldHaveMatch.hasMatches) {
-          console.log('🎉 MATCH BULUNABİLİR - Swap yapılıyor');
           await this.swapSymbols(draggedSymbol, targetSymbol, gridPosition, logicContext);
-          
-          // Hamle sayısını artır
           Store.getState().incrementMoveCount();
-          console.log('Hamle sayısı:', Store.getState().moveCount);
           
         } else {
-          console.log('❌ Match bulunamaz - Swap yapılmıyor');
-          
-          // Başarısız hamle sayısını artır
+          console.log('Match bulunamaz - Swap yapılmıyor');
           Store.getState().incrementMoveFailedCount();
           this.checkFailedMoveLimit();
-          
           await this.returnSymbolToOriginalPosition(draggedSymbol);
         }
       } else {
@@ -59,12 +52,20 @@ export class ValidationLogic implements ILogic {
   }
   
   private async processMatches(matchResult: MatchResult, logicContext: ILogicContext): Promise<void> {
-    console.log('🔄 Match işlemi başlatılıyor...');
+    // console.log('Match işlemi başlatılıyor...');
     
-    // MatchingLogic'i çalıştır (Store methods'ları kaldırıldı)
-    await this.matchingLogic.execute(matchResult, logicContext);
+    // Duplicate pozisyonları temizle
+    const uniquePositions = matchResult.allMatchedPositions.filter((pos, index, self) => 
+      index === self.findIndex(p => p.row === pos.row && p.col === pos.col)
+    );
     
-    console.log('✅ Match işlemi tamamlandı');
+    const cleanMatchResult = {
+      ...matchResult,
+      allMatchedPositions: uniquePositions
+    };
+    
+    // MatchingLogic'i çalıştır
+    await this.matchingLogic.execute(cleanMatchResult, logicContext);
   }
   
   private checkCollisionWithMainBoard(
@@ -289,9 +290,7 @@ export class ValidationLogic implements ILogic {
     const viewerBoardGlobalPos = logicContext.viewerBoard.toGlobal(viewerCellPos);
     const finalPos = targetSymbol.parent.toLocal(viewerBoardGlobalPos);
     
-    console.log(targetSymbol.position, finalPos, viewerBoardGlobalPos, viewerCellPos, viewerIndex);
-    // Animate to final position
-
+    // console.log(targetSymbol.position, finalPos, viewerBoardGlobalPos, viewerCellPos, viewerIndex);
     // TODO -> viewer 0 al, 2 kere 4 - 0 gönder, hatayı göreceksin, target position başlangıç noktası hatalı !
     await animate(targetSymbol, {
       x: finalPos.x,
@@ -357,10 +356,9 @@ export class ValidationLogic implements ILogic {
     const failedCount = Store.getState().moveFailedCount;
     
     if (failedCount % 2 === 0) {
-      console.log('🚨 UYARI: 2 başarısız hamle yapıldı! İpucu gösteriliyor...');
       this.showHint();
     } else {
-      console.log(`Başarısız hamle sayısı: ${failedCount}`);
+      // console.log(`Başarısız hamle sayısı: ${failedCount}`);
     }
   }
   
@@ -404,9 +402,9 @@ export class ValidationLogic implements ILogic {
       const selectedHint = allHints[randomIndex];
       
       this.highlightGroup(selectedHint.group, logicContext);
-      console.log(`💡 İpucu: (${selectedHint.startPosition.row},${selectedHint.startPosition.col}) pozisyonunda ${selectedHint.group.length}'li ${selectedHint.type} grup var`);
+      // console.log(`💡 İpucu: (${selectedHint.startPosition.row},${selectedHint.startPosition.col}) pozisyonunda ${selectedHint.group.length}'li ${selectedHint.type} grup var`);
     } else {
-      console.log('😞 Hiç hint bulunamadı');
+      // console.log('😞 Hiç hint bulunamadı');
     }
   }
   

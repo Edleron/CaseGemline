@@ -21,8 +21,8 @@ export class MatchRules {
   // RULE: Sadece yatay ve dikey match'ler geçerli (çapraz değil)
   public static readonly VALID_DIRECTIONS = ['horizontal', 'vertical'] as const;
   
-  // RULE: Match başına puan hesabı
-  public static readonly POINTS_PER_SYMBOL = 10;
+  // RULE: Match başına puan hesabı - Yeni formül: (N - 2)² × 10
+  public static readonly POINTS_BASE_MULTIPLIER = 10;
   
   // RULE: Minimum board boyutu
   public static readonly MIN_BOARD_SIZE = { rows: 6, cols: 6 };
@@ -54,9 +54,17 @@ export class MatchRules {
     return symbol && typeof symbol.getSymbolType === 'function';
   }
   
-  // RULE: Match gruplarından toplam puan hesapla
+  // RULE: Match gruplarından toplam puan hesapla - Yeni formül
   public static calculateScore(matchCount: number): number {
-    return matchCount * this.POINTS_PER_SYMBOL;
+    if (matchCount < this.MIN_MATCH_COUNT) return 0;
+    return Math.pow(matchCount - 2, 2) * this.POINTS_BASE_MULTIPLIER;
+  }
+  
+  // RULE: Birden fazla match grubu için toplam puan hesapla
+  public static calculateTotalScore(matchGroups: MatchGroup[]): number {
+    return matchGroups.reduce((total, group) => {
+      return total + this.calculateScore(group.positions.length);
+    }, 0);
   }
   
   // RULE: Match grubunun geçerli olup olmadığını kontrol et

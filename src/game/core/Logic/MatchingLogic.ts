@@ -11,7 +11,7 @@ export class MatchingLogic implements ILogic {
       return;
     }
 
-    console.log('🔥 MatchingLogic başlatılıyor - Matchler yok ediliyor...');
+    // console.log('🔥 MatchingLogic başlatılıyor - Matchler yok ediliyor...');
     
     // 1. Match'leri highlight et
     // await this.highlightMatches(matchResult, logicContext);
@@ -25,11 +25,11 @@ export class MatchingLogic implements ILogic {
     // 4. Store'u güncelle
     this.updateStore(matchResult, logicContext);
     
-    console.log('✅ MatchingLogic tamamlandı');
+    // console.log('✅ MatchingLogic tamamlandı');
   }
   
   private async highlightMatches(matchResult: MatchResult, logicContext: ILogicContext): Promise<void> {
-    console.log('💡 Matchler highlight ediliyor...');
+    // console.log('💡 Matchler highlight ediliyor...');
     
     const highlightPromises: Promise<void>[] = [];
     
@@ -54,10 +54,7 @@ export class MatchingLogic implements ILogic {
   }
   
   private async destroyMatches(matchResult: MatchResult, logicContext: ILogicContext): Promise<void> {
-    console.log('💥 Matchler yok ediliyor...');
-    
     const destroyPromises: Promise<void>[] = [];
-    
     for (const position of matchResult.allMatchedPositions) {
       const symbol = logicContext.mainSymbols[position.row]?.[position.col];
       if (symbol) {
@@ -85,7 +82,7 @@ export class MatchingLogic implements ILogic {
   }
   
   private async dropNewSymbols(matchResult: MatchResult, logicContext: ILogicContext): Promise<void> {
-    console.log('⬇️ Yeni symboller düşürülüyor...');
+    // console.log('⬇️ Yeni symboller düşürülüyor...');
     
     // Her sütun için boş pozisyonları tespit et
     const columnsToProcess = new Set<number>();
@@ -202,17 +199,10 @@ export class MatchingLogic implements ILogic {
   }
   
   private updateStore(matchResult: MatchResult, logicContext: ILogicContext): void {
-    console.log('🏪 Store güncelleniyor...');
-    
-    // Skor hesapla ve güncelle
-    const totalMatchedSymbols = matchResult.allMatchedPositions.length;
-    const scoreGained = MatchRules.calculateScore(totalMatchedSymbols);
-    
-    // Store score update (using existing method pattern)
-    // const currentScore = Store.getState().score || 0;
-    // Store.getState().setScore(currentScore + scoreGained);
-    
-    // Store context'ini güncelle
+    // console.log('🏪 Store güncelleniyor...');
+    const scoreGained = MatchRules.calculateTotalScore(matchResult.matches);
+    const currentScore = Store.getState().score || 0;
+    Store.getState().setScore(currentScore + scoreGained);
     const updatedContext = {
       ...logicContext,
       mainSymbols: logicContext.mainSymbols,
@@ -221,7 +211,12 @@ export class MatchingLogic implements ILogic {
     
     Store.getState().setLogicContext(updatedContext);
     
-    console.log(`📊 Skor güncellendi: +${scoreGained} puan (${totalMatchedSymbols} symbol)`);
-    console.log(`📊 Toplam skor: ${Store.getState().score}`);
+    const matchDetails = matchResult.matches.map(match => 
+      `${match.positions.length} taş = ${MatchRules.calculateScore(match.positions.length)} puan`
+    ).join(', ');
+    
+    console.log(`📊 Puan detayı: ${matchDetails}`);
+    console.log(`📊 Toplam kazanılan: +${scoreGained} puan`);
+    console.log(`📊 Toplam skor: ${currentScore + scoreGained}`);
   }
 }
