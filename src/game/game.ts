@@ -1,11 +1,12 @@
 import { Container } from "pixi.js";
 import { Core } from "./core/Core";
 import { Store } from "./Store/Store";
-import { GameOverPopup } from "../app/popups/GameOverPopup";
+import { GetConfig } from "./core/Constants/Configt";
 
 export class CreationGame extends Container {
   private core: Core | undefined;
   private gameStateUnsubscribe?: () => void;
+  private config = GetConfig();
 
   constructor() {
     super();
@@ -25,9 +26,9 @@ export class CreationGame extends Container {
         this.showGameOverPopup();
       }
       
-      // Check score reached 500+ (win condition)
-      if (state.score !== previousState.score && state.score >= 500 && previousState.score < 500) {
-        console.log('🎉 KAZANDINIZ! 500+ puana ulaştınız!');
+      // Check score reached win threshold (win condition)
+      if (state.score !== previousState.score && state.score >= this.config.winScore && previousState.score < this.config.winScore) {
+        console.log(`🎉 KAZANDINIZ! ${this.config.winScore}+ puana ulaştınız!`);
         this.showWinPopup();
       }
     });

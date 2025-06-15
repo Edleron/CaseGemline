@@ -1,4 +1,3 @@
-
 export const ValidModes = ['easy', 'normal', 'hard'] as const;
 export type Mode = (typeof ValidModes)[number];
 const blocks: Record<Mode, string[]> = {
@@ -15,6 +14,9 @@ const defaultConfig = {
     duration: 60,
     cellTexture : "cell.png",
     mode: <Mode>'normal',
+    // Game Rules
+    maxMoves: 25,
+    winScore: 500,
 };
 
 export type Config = typeof defaultConfig;

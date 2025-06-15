@@ -1,4 +1,5 @@
 import { createStore } from "zustand/vanilla";
+import { GetConfig } from "../core/Constants/Configt";
 
 interface GameState {
   score: number;
@@ -34,9 +35,11 @@ interface GameState {
   setScore: (score: number) => void;
 }
 
+const config = GetConfig();
+
 export const Store = createStore<GameState>((set) => ({
   score: 0,
-  moves: 3,
+  moves: config.maxMoves,
   isGameOver: false,
   
   // Logic Context State
@@ -50,7 +53,7 @@ export const Store = createStore<GameState>((set) => ({
   setGameOver: (isGameOver) => set({ isGameOver }),
   resetGame: () => set({ 
     score: 0, 
-    moves: 25, 
+    moves: config.maxMoves, 
     isGameOver: false,
     draggedSymbol: null,
     isSwapInProgress: false,
