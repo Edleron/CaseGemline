@@ -44,9 +44,9 @@ export class Core extends Container {
     
     // Position viewer board below main board
     this.viewerBoard.x = 128
-    this.viewerBoard.y = this.mainBoard.height + 50;
+    this.viewerBoard.y = this.mainBoard.height + 25;
     this.viewerContainer.x = 128;
-    this.viewerContainer.y = this.mainBoard.height + 50;
+    this.viewerContainer.y = this.mainBoard.height + 25;
     
     this.addChild(this.mainBoard);
     this.addChild(this.viewerBoard);

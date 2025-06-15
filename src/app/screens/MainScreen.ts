@@ -8,6 +8,7 @@ import { game } from "../getGame";
 import { PausePopup } from "../popups/PausePopup";
 import { SettingsPopup } from "../popups/SettingsPopup";
 import { Button } from "../ui/Button";
+import { Label } from "../ui/Label";
 
 /** The screen that holds the app */
 export class MainScreen extends Container {
@@ -18,6 +19,7 @@ export class MainScreen extends Container {
   private pauseButton!      : FancyButton;
   private settingsButton!   : FancyButton;
   private addButton!        : FancyButton;
+  private title!            : Label;
   private paused            = false;
 
   constructor() {
@@ -77,6 +79,14 @@ export class MainScreen extends Container {
       }
     });
     this.uiContainer.addChild(this.addButton);
+
+    this.title = new Label({
+      text: "Toplam Puan: 0",
+      style: { fill: 0xec1561, fontSize: 50 },
+    });
+    this.title.x = 200;
+    this.title.y = 400;
+    this.uiContainer.addChild(this.title);
   } 
 
   /** Prepare the screen just before showing */
@@ -121,15 +131,17 @@ export class MainScreen extends Container {
 
     // this.mainContainer.x = centerX;
     // this.mainContainer.y = centerY;
-    
+
     game().position.x = (width / 2) - (game().width / 2);
-    game().position.y = 50;
+    game().position.y = 25;
     this.pauseButton.x = 30;
     this.pauseButton.y = 30;
     this.settingsButton.x = width - 30;
     this.settingsButton.y = 30;
     this.addButton.x = width / 2;
-    this.addButton.y = height - 75;
+    this.addButton.y = height - 35;
+    this.title.x = width / 2;
+    this.title.y = height - 175;
   }
 
   /** Show screen with animations */
