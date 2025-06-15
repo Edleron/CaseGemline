@@ -59,11 +59,17 @@ export class LogicListener {
         if (this.lastState === 'dragging') {
           await this.handleDropCompleted();
           Store.getState().clearLogicState();
+        } else if (this.lastState === 'matching') {
+          console.log('[LogicListener] Match işlemi tamamlandı, idle durumuna geçildi');
         }
         break;
         
       case 'hovering':
         this.handleHoveringStarted(context);
+        break;
+        
+      case 'matching':
+        this.handleMatchingStarted(context);
         break;
     }
   }
@@ -97,6 +103,13 @@ export class LogicListener {
   
   private handleHoveringStarted(_context: any): void {
     // console.log('[LogicListener] Hovering started');
+  }
+  
+  private handleMatchingStarted(context: any): void {
+    console.log('[LogicListener] Match işlemi başlatıldı');
+    if (context.pendingMatches) {
+      console.log('[LogicListener] Pending matches:', context.pendingMatches);
+    }
   }
   
   public destroy(): void {

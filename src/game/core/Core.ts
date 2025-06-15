@@ -246,7 +246,7 @@ export class Core extends Container {
     animate(
       symbol,
       { 
-        // x: finalX, // TODO çift dupliacate için englendi
+        // x: finalX, // X koordinatını da animate et
         y: finalY 
       },
       {
@@ -273,7 +273,7 @@ export class Core extends Container {
     animate(
       symbol,
       { 
-        // x: finalX, // TODO çift dupliacate için englendi
+        // x: finalX, // X koordinatını da animate et
         y: finalY 
       },
       {

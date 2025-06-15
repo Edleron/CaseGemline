@@ -7,6 +7,8 @@ const m_Types = {
     SYMBOL_DRAG_MOVE: 'symboldragmove',
     SYMBOL_HOVER_START: 'symbolhoverstart',
     SYMBOL_HOVER_END: 'symbolhoverend',
+    PROCESS_MATCHES: 'processmatches',
+    MATCHES_COMPLETED: 'matchescompleted',
 } as const;
 
 const m_Actions = {
@@ -16,6 +18,8 @@ const m_Actions = {
     drag_move: 'drag_move',
     hover_start: 'hover_start',
     hover_end: 'hover_end',
+    store_matches: 'store_matches',
+    clear_matches: 'clear_matches',
 } as const;
 
 const m_Targets = {
@@ -33,6 +37,7 @@ interface IContext {
     hoveredSymbol: any | null;
     dropTarget: { row: number; col: number } | null;
     isValidDrop: boolean;
+    pendingMatches: any | null;
 }
 //#endregion
 
@@ -42,7 +47,9 @@ type TEvents =
     | { type: typeof m_Types.SYMBOL_DRAG_END; symbol: any; position: { x: number; y: number } }
     | { type: typeof m_Types.SYMBOL_DRAG_MOVE; position: { x: number; y: number } }
     | { type: typeof m_Types.SYMBOL_HOVER_START; symbol: any }
-    | { type: typeof m_Types.SYMBOL_HOVER_END; symbol: any };
+    | { type: typeof m_Types.SYMBOL_HOVER_END; symbol: any }
+    | { type: typeof m_Types.PROCESS_MATCHES; matches: any }
+    | { type: typeof m_Types.MATCHES_COMPLETED };
 //#endregion
 
 export const UIStateMachine = setup({
@@ -87,6 +94,14 @@ export const UIStateMachine = setup({
                 return null;
             },
         }),
+        [m_Actions.store_matches]: assign({
+            pendingMatches: ({ event }) => {
+                return event.type === m_Types.PROCESS_MATCHES ? event.matches : null;
+            },
+        }),
+        [m_Actions.clear_matches]: assign({
+            pendingMatches: () => null,
+        }),
         logIdleEntry: () => {
             // console.log('[State] Entered idle');
         },
@@ -109,6 +124,7 @@ export const UIStateMachine = setup({
         hoveredSymbol: null,
         dropTarget: null,
         isValidDrop: false,
+        pendingMatches: null,
     },
     id: 'gameStateMachine',
     initial: m_Targets.idle,
@@ -123,6 +139,10 @@ export const UIStateMachine = setup({
                 [m_Types.SYMBOL_HOVER_START]: {
                     target: m_Targets.hovering,
                     actions: [m_Actions.hover_start]
+                },
+                [m_Types.PROCESS_MATCHES]: {
+                    target: m_Targets.matching,
+                    actions: [m_Actions.store_matches]
                 }
             }
         },
@@ -153,6 +173,12 @@ export const UIStateMachine = setup({
         },
         [m_Targets.matching]: {
             entry: ['logMatchingEntry'],
+            on: {
+                [m_Types.MATCHES_COMPLETED]: {
+                    target: m_Targets.idle,
+                    actions: [m_Actions.clear_matches]
+                }
+            }
         },
         [m_Targets.dropping]: {
             entry: ['logDroppingEntry'],

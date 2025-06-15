@@ -2,8 +2,15 @@ import { ILogic, ILogicContext } from "./ILogic";
 import { animate } from "motion";
 import { Store } from "../../Store/Store";
 import { MatchRules, MatchResult } from "../Rules/MatchRules";
+import { MatchingLogic } from "./MatchingLogic";
 
 export class ValidationLogic implements ILogic {
+  private matchingLogic: MatchingLogic;
+  private wouldHaveMatch: MatchResult | null = null;
+  
+  constructor() {
+    this.matchingLogic = new MatchingLogic();
+  }
   
   async execute(context: any, logicContext: ILogicContext): Promise<void> {
     const { draggedSymbol } = context;
@@ -21,15 +28,14 @@ export class ValidationLogic implements ILogic {
     if (!isCollidingWithMainBoard) {
       await this.returnSymbolToOriginalPosition(draggedSymbol);
     } else {
-
       const mainBoardLocalPos = logicContext.mainBoard.toLocal(symbolGlobalPosition);
       const gridPosition = logicContext.mainBoard.getGridPositionFromCoords(mainBoardLocalPos.x, mainBoardLocalPos.y);
       const targetSymbol = logicContext.mainSymbols[gridPosition.row]?.[gridPosition.col];
+      
       if (targetSymbol) {
-        // Önce match kontrolü yap (swap yapmadan)
-        const wouldHaveMatch = this.checkPotentialMatch(draggedSymbol, targetSymbol, gridPosition, logicContext);
+        this.wouldHaveMatch = this.checkPotentialMatch(draggedSymbol, targetSymbol, gridPosition, logicContext);
         
-        if (wouldHaveMatch.hasMatches) {
+        if (this.wouldHaveMatch.hasMatches) {
           console.log('🎉 MATCH BULUNABİLİR - Swap yapılıyor');
           await this.swapSymbols(draggedSymbol, targetSymbol, gridPosition, logicContext);
           
@@ -37,11 +43,6 @@ export class ValidationLogic implements ILogic {
           Store.getState().incrementMoveCount();
           console.log('Hamle sayısı:', Store.getState().moveCount);
           
-          console.log('Match detayları:', wouldHaveMatch.matches.length, 'adet match');
-          wouldHaveMatch.matches.forEach((match, index) => {
-            console.log(`Match ${index + 1}:`, match.direction, match.positions.length, 'symbol', match.symbolType);
-            console.log('Pozisyonlar:', match.positions.map(pos => `(${pos.row},${pos.col})`).join(' '));
-          });
         } else {
           console.log('❌ Match bulunamaz - Swap yapılmıyor');
           
@@ -55,6 +56,15 @@ export class ValidationLogic implements ILogic {
         await this.returnSymbolToOriginalPosition(draggedSymbol);
       }
     }
+  }
+  
+  private async processMatches(matchResult: MatchResult, logicContext: ILogicContext): Promise<void> {
+    console.log('🔄 Match işlemi başlatılıyor...');
+    
+    // MatchingLogic'i çalıştır (Store methods'ları kaldırıldı)
+    await this.matchingLogic.execute(matchResult, logicContext);
+    
+    console.log('✅ Match işlemi tamamlandı');
   }
   
   private checkCollisionWithMainBoard(
@@ -114,11 +124,15 @@ export class ValidationLogic implements ILogic {
 
     // Update interactivity
     this.updateSymbolInteractivity(dragSymbol, targetSymbol, logicContext);
+
+    if (this.wouldHaveMatch !== null && this.wouldHaveMatch.hasMatches) {
+      await this.processMatches(this.wouldHaveMatch, logicContext);
+    }
   }
   
   private checkPotentialMatch(
     dragSymbol: any,
-    targetSymbol: any, 
+    _targetSymbol: any, // Underscore prefix to indicate unused
     gridPosition: { row: number; col: number }, 
     logicContext: ILogicContext
   ): MatchResult {
