@@ -4,6 +4,7 @@ import { Store } from "./Store/Store";
 
 export class CreationGame extends Container {
   private core: Core | undefined;
+  private gameStateUnsubscribe?: () => void;
 
   constructor() {
     super();
@@ -12,6 +13,21 @@ export class CreationGame extends Container {
   public init() {
     this.core = new Core();
     this.addChild(this.core);
+    this.setupGameStateMonitoring();
+  }
+
+  private setupGameStateMonitoring(): void {
+    this.gameStateUnsubscribe = Store.subscribe((state, previousState) => {
+      // Check moves changed to 0 (lose condition)
+      if (state.moves !== previousState.moves && state.moves === 0) {
+        console.log('🔴 KAYBETTINIZ! Hamle sayınız bitti.');
+      }
+      
+      // Check score reached 500+ (win condition)
+      if (state.score !== previousState.score && state.score >= 500 && previousState.score < 500) {
+        console.log('🎉 KAZANDINIZ! 500+ puana ulaştınız!');
+      }
+    });
   }
 
   public fade() {
@@ -52,5 +68,13 @@ export class CreationGame extends Container {
 
   public getCurrentMove(): number {
     return Store.getState().moves;
+  }
+
+  public destroy() {
+    if (this.gameStateUnsubscribe) {
+      this.gameStateUnsubscribe();
+      this.gameStateUnsubscribe = undefined;
+    }
+    super.destroy();
   }
 }

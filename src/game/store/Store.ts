@@ -36,7 +36,7 @@ interface GameState {
 
 export const Store = createStore<GameState>((set) => ({
   score: 0,
-  moves: 25,
+  moves: 3,
   isGameOver: false,
   
   // Logic Context State

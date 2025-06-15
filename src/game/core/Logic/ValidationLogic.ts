@@ -25,6 +25,7 @@ export class ValidationLogic implements ILogic {
       logicContext
     );
     
+    Store.getState().decrementMove();
     if (!isCollidingWithMainBoard) {
       await this.returnSymbolToOriginalPosition(draggedSymbol);
     } else {
@@ -37,8 +38,6 @@ export class ValidationLogic implements ILogic {
         
         if (this.wouldHaveMatch.hasMatches) {
           await this.swapSymbols(draggedSymbol, targetSymbol, gridPosition, logicContext);
-          Store.getState().decrementMove();
-          
         } else {
           console.log('Match bulunamaz - Swap yapılmıyor');
           Store.getState().incrementMoveFailedCount();
